@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../providers/navigation_provider.dart';
-import '../../providers/theme_provider.dart';
 import '../auth/providers/auth_provider.dart';
 import '../shell/widgets/sync_status_badge.dart';
 import '../transactions/providers/transaction_providers.dart';
