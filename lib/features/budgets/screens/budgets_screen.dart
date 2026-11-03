@@ -560,3 +560,4 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 }
+

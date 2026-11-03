@@ -158,3 +158,4 @@ final categoryBudgetProgressListProvider = Provider<List<CategoryBudgetProgress>
     error: (_, __) => [],
   );
 });
+
