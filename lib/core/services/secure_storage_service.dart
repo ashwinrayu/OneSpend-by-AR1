@@ -60,3 +60,4 @@ class SecureStorageService {
     await _storage.delete(key: _guestKey);
   }
 }
+

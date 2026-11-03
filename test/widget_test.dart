@@ -46,6 +46,30 @@ void main() {
     expect(restored.category, item.category);
     expect(restored.paymentMethod, item.paymentMethod);
     expect(restored.notes, item.notes);
+    expect(restored.syncStatus, 'pending');
+    expect(restored.isDeleted, false);
+  });
+
+  test('TransactionItem syncStatus and isDeleted serialization', () {
+    final item = TransactionItem(
+      id: 'tx_sync_1',
+      title: 'Salary',
+      amount: 75000.0,
+      type: TransactionType.income,
+      category: 'Income',
+      paymentMethod: PaymentMethod.bank,
+      timestamp: DateTime(2026, 11, 1),
+      syncStatus: 'synced',
+      isDeleted: true,
+    );
+
+    final map = item.toMap();
+    expect(map['sync_status'], 'synced');
+    expect(map['is_deleted'], 1);
+
+    final restored = TransactionItem.fromMap(map);
+    expect(restored.syncStatus, 'synced');
+    expect(restored.isDeleted, true);
   });
 
   test('ExportService CSV generation formatting test', () {

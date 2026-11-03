@@ -168,3 +168,4 @@ class _SyncStatusBadgeState extends ConsumerState<SyncStatusBadge>
     );
   }
 }
+

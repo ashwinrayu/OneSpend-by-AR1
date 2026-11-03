@@ -197,3 +197,4 @@ final syncServiceProvider =
     StateNotifierProvider<SyncNotifier, SyncStatus>((ref) {
   return SyncNotifier(ref);
 });
+
