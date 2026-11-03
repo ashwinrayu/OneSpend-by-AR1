@@ -36,6 +36,7 @@ class ExpenseRepository {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
+      where: 'is_deleted = 0',
       orderBy: 'timestamp DESC',
     );
     return maps.map((map) => TransactionItem.fromMap(map)).toList();
@@ -50,7 +51,7 @@ class ExpenseRepository {
 
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
-      where: 'timestamp >= ? AND timestamp < ?',
+      where: 'timestamp >= ? AND timestamp < ? AND is_deleted = 0',
       whereArgs: [startOfMonth, endOfMonth],
       orderBy: 'timestamp DESC',
     );
@@ -59,18 +60,20 @@ class ExpenseRepository {
 
   Future<void> insertTransaction(TransactionItem item) async {
     final db = await _db;
+    final itemMap = item.copyWith(syncStatus: 'pending').toMap();
     await db.insert(
       'transactions',
-      item.toMap(),
+      itemMap,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
   Future<void> updateTransaction(TransactionItem item) async {
     final db = await _db;
+    final itemMap = item.copyWith(syncStatus: 'pending').toMap();
     await db.update(
       'transactions',
-      item.toMap(),
+      itemMap,
       where: 'id = ?',
       whereArgs: [item.id],
     );
@@ -78,11 +81,83 @@ class ExpenseRepository {
 
   Future<void> deleteTransaction(String id) async {
     final db = await _db;
-    await db.delete(
+    // Mark as deleted and pending sync
+    await db.update(
       'transactions',
+      {'is_deleted': 1, 'sync_status': 'pending'},
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  // Sync operations
+  Future<List<TransactionItem>> getPendingSyncTransactions() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'transactions',
+      where: "sync_status = 'pending'",
+    );
+    return maps.map((map) => TransactionItem.fromMap(map)).toList();
+  }
+
+  Future<void> markTransactionsAsSynced(List<String> ids) async {
+    if (ids.isEmpty) return;
+    final db = await _db;
+    final batch = db.batch();
+    for (final id in ids) {
+      batch.update(
+        'transactions',
+        {'sync_status': 'synced'},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
+    // Purge any synced items that were marked is_deleted = 1
+    batch.delete(
+      'transactions',
+      where: "is_deleted = 1 AND sync_status = 'synced'",
+    );
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> mergeServerTransactions(List<dynamic> serverChanges) async {
+    if (serverChanges.isEmpty) return;
+    final db = await _db;
+    final batch = db.batch();
+
+    for (final change in serverChanges) {
+      final map = change as Map<String, dynamic>;
+      final id = map['id'] as String;
+      final isDeleted = (map['is_deleted'] as bool?) ?? false;
+
+      if (isDeleted) {
+        batch.delete('transactions', where: 'id = ?', whereArgs: [id]);
+      } else {
+        final timestampStr = map['timestamp'] as String;
+        final timestampMs = DateTime.parse(timestampStr).millisecondsSinceEpoch;
+
+        final localMap = {
+          'id': id,
+          'title': map['title'] as String,
+          'amount': (map['amount'] as num).toDouble(),
+          'type': (map['type'] as String).toLowerCase(),
+          'category': map['category'] as String,
+          'paymentMethod': (map['payment_method'] as String?) ?? 'UPI',
+          'timestamp': timestampMs,
+          'notes': map['notes'] as String?,
+          'sync_status': 'synced',
+          'is_deleted': 0,
+        };
+
+        batch.insert(
+          'transactions',
+          localMap,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    }
+
+    await batch.commit(noResult: true);
   }
 
   // Categories CRUD
@@ -158,4 +233,3 @@ class ExpenseRepository {
     );
   }
 }
-

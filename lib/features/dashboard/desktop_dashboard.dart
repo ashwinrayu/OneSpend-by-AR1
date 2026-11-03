@@ -6,6 +6,8 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../auth/providers/auth_provider.dart';
+import '../shell/widgets/sync_status_badge.dart';
 import '../transactions/providers/transaction_providers.dart';
 import '../transactions/widgets/add_transaction_sheet_or_dialog.dart';
 import 'widgets/desktop_metric_cards.dart';
@@ -288,67 +290,72 @@ class _DesktopDashboardState extends ConsumerState<DesktopDashboard> {
           ),
 
           // Bottom User Profile & Theme Action Tile
-          Container(
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B1E26),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.desktopBorder),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 17,
-                  backgroundColor: AppColors.brandTeal.withOpacity(0.2),
-                  child: const Text(
-                    'A',
-                    style: TextStyle(
-                      color: AppColors.brandTeal,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+          Builder(builder: (context) {
+            final auth = ref.watch(authControllerProvider);
+            final userName = auth.user?['full_name'] as String? ??
+                (auth.isGuest ? 'Guest User' : 'Ashwin');
+            final userInitial =
+                userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+
+            return Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B1E26),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.desktopBorder),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.brandTeal.withOpacity(0.2),
+                    child: Text(
+                      userInitial,
+                      style: const TextStyle(
+                        color: AppColors.brandTeal,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Ashwin',
-                        style: TextStyle(
-                          color: AppColors.desktopTextPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          userName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.desktopTextPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Personal Workspace',
-                        style: TextStyle(
-                          color: AppColors.desktopTextSecondary,
-                          fontSize: 10,
+                        Text(
+                          auth.isGuest ? 'Offline Mode' : 'Cloud Synced',
+                          style: const TextStyle(
+                            color: AppColors.desktopTextSecondary,
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.brightness_4_outlined,
-                      size: 18, color: AppColors.desktopTextSecondary),
-                  tooltip: 'Toggle Theme',
-                  onPressed: () {
-                    final curr = ref.read(themeModeProvider);
-                    ref.read(themeModeProvider.notifier).state =
-                        curr == ThemeMode.dark
-                            ? ThemeMode.light
-                            : ThemeMode.dark;
-                  },
-                ),
-              ],
-            ),
-          ),
+                  IconButton(
+                    icon: const Icon(Icons.logout_rounded,
+                        size: 17, color: AppColors.desktopTextSecondary),
+                    tooltip: auth.isGuest ? 'Exit Guest Mode' : 'Sign Out',
+                    onPressed: () =>
+                        ref.read(authControllerProvider.notifier).logout(),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -387,9 +394,13 @@ class _DesktopDashboardState extends ConsumerState<DesktopDashboard> {
             ],
           ),
 
-          // Actions Row: Search, Date Selector, "+ Add Transaction"
+          // Actions Row: Sync Badge, Search, Date Selector, "+ Add Transaction"
           Row(
             children: [
+              // Cloud Sync Status Indicator
+              const SyncStatusBadge(),
+              const SizedBox(width: 14),
+
               // Search Input with Ctrl+K badge
               Container(
                 width: 240,

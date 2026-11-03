@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/sync_service.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/expense_repository.dart';
 import '../../../models/budget_item.dart';
@@ -60,11 +61,18 @@ class TransactionListNotifier extends StateNotifier<AsyncValue<List<TransactionI
     }
   }
 
+  void _triggerBackgroundSync() {
+    try {
+      ref.read(syncServiceProvider.notifier).syncNow();
+    } catch (_) {}
+  }
+
   Future<void> addTransaction(TransactionItem item) async {
     try {
       final repo = ref.read(expenseRepositoryProvider);
       await repo.insertTransaction(item);
       await fetchTransactions();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -75,6 +83,7 @@ class TransactionListNotifier extends StateNotifier<AsyncValue<List<TransactionI
       final repo = ref.read(expenseRepositoryProvider);
       await repo.updateTransaction(item);
       await fetchTransactions();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -85,6 +94,7 @@ class TransactionListNotifier extends StateNotifier<AsyncValue<List<TransactionI
       final repo = ref.read(expenseRepositoryProvider);
       await repo.deleteTransaction(id);
       await fetchTransactions();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

@@ -44,8 +44,9 @@ class AppDatabase {
 
     return await openDatabase(
       dbPath,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -78,7 +79,9 @@ class AppDatabase {
         category TEXT NOT NULL,
         paymentMethod TEXT NOT NULL,
         timestamp INTEGER NOT NULL,
-        notes TEXT
+        notes TEXT,
+        sync_status TEXT NOT NULL DEFAULT 'synced',
+        is_deleted INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -99,6 +102,17 @@ class AppDatabase {
     await batch.commit(noResult: true);
   }
 
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        await db.execute("ALTER TABLE transactions ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'synced'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE transactions ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
+      } catch (_) {}
+    }
+  }
+
   Future<void> close() async {
     final db = _database;
     if (db != null) {
@@ -107,4 +121,3 @@ class AppDatabase {
     }
   }
 }
-

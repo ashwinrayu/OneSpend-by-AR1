@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/backup_service.dart';
+import '../../../core/services/sync_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../models/budget_item.dart';
 import '../../../models/enums.dart';
 import '../../analytics/providers/analytics_providers.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../shell/widgets/sync_status_badge.dart';
 import '../../transactions/providers/transaction_providers.dart';
 import '../providers/preferences_provider.dart';
 
@@ -325,6 +328,100 @@ class SettingsScreen extends ConsumerWidget {
           vertical: 20,
         ),
         children: [
+          // 0. Account & Cloud Sync Section
+          Text(
+            'Account & Cloud Sync',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Builder(
+            builder: (context) {
+              final auth = ref.watch(authControllerProvider);
+              final userName = auth.user?['full_name'] as String? ?? (auth.isGuest ? 'Guest User' : 'Ashwin');
+              final email = auth.user?['email'] as String? ?? (auth.isGuest ? 'Offline Local Storage' : '');
+
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: AppColors.primary.withOpacity(0.15),
+                            child: Icon(
+                              auth.isGuest ? Icons.person_outline_rounded : Icons.person_rounded,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  email,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme.textTheme.bodySmall?.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SyncStatusBadge(),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (!auth.isGuest)
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                ref.read(syncServiceProvider.notifier).syncNow();
+                              },
+                              icon: const Icon(Icons.sync_rounded, size: 16),
+                              label: const Text('Sync Now', style: TextStyle(fontSize: 12)),
+                            ),
+                          const SizedBox(width: 8),
+                          FilledButton.tonalIcon(
+                            onPressed: () {
+                              ref.read(authControllerProvider.notifier).logout();
+                            },
+                            icon: Icon(
+                              auth.isGuest ? Icons.login_rounded : Icons.logout_rounded,
+                              size: 16,
+                            ),
+                            label: Text(
+                              auth.isGuest ? 'Sign In / Register' : 'Sign Out',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+
           // 1. Currency Preference
           Text(
             'Currency & Region',

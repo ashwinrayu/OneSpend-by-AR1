@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/sync_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/enums.dart';
 import '../../models/transaction_item.dart';
 import '../../providers/navigation_provider.dart';
+import '../auth/providers/auth_provider.dart';
+import '../shell/widgets/sync_status_badge.dart';
 import '../transactions/providers/transaction_providers.dart';
 import '../transactions/widgets/add_transaction_sheet_or_dialog.dart';
 
@@ -35,6 +38,7 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
           onRefresh: () async {
             await ref.read(transactionListProvider.notifier).fetchTransactions();
             ref.invalidate(activeBudgetProvider);
+            ref.read(syncServiceProvider.notifier).syncNow();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -132,6 +136,9 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
 
   // Top Status Bar Header
   Widget _buildTopHeader(BuildContext context) {
+    final auth = ref.watch(authControllerProvider);
+    final userName = auth.user?['full_name'] as String? ?? (auth.isGuest ? 'Guest' : 'Ashwin');
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -144,28 +151,23 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.mobileCardBorder, width: 2),
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/avatar.png'),
-                  fit: BoxFit.cover,
-                  onError: null,
-                ),
                 color: const Color(0xFF232733),
               ),
               child: const Icon(Icons.person_rounded, color: Colors.white70, size: 24),
             ),
             const SizedBox(width: 12),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello, Ashwin',
-                  style: TextStyle(
+                  'Hello, $userName',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
+                const Text(
                   'OneSpend by AR1',
                   style: TextStyle(
                     color: AppColors.income,
@@ -178,33 +180,39 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
           ],
         ),
 
-        // Notification Icon with Red Badge Dot
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.mobileCard,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.mobileCardBorder),
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 20),
-              Positioned(
-                top: 10,
-                right: 11,
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEF4444), // red notification dot
-                    shape: BoxShape.circle,
-                  ),
-                ),
+        // Actions: Cloud Sync Badge & Notifications
+        Row(
+          children: [
+            const SyncStatusBadge(compact: true),
+            const SizedBox(width: 8),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.mobileCard,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.mobileCardBorder),
               ),
-            ],
-          ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 20),
+                  Positioned(
+                    top: 10,
+                    right: 11,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEF4444), // red notification dot
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -9,6 +9,8 @@ class TransactionItem {
   final PaymentMethod paymentMethod;
   final DateTime timestamp;
   final String? notes;
+  final String syncStatus; // 'synced' | 'pending'
+  final bool isDeleted;
 
   const TransactionItem({
     required this.id,
@@ -19,6 +21,8 @@ class TransactionItem {
     required this.paymentMethod,
     required this.timestamp,
     this.notes,
+    this.syncStatus = 'pending',
+    this.isDeleted = false,
   });
 
   bool get isExpense => type == TransactionType.expense;
@@ -33,6 +37,8 @@ class TransactionItem {
       'paymentMethod': paymentMethod.name,
       'timestamp': timestamp.millisecondsSinceEpoch,
       'notes': notes,
+      'sync_status': syncStatus,
+      'is_deleted': isDeleted ? 1 : 0,
     };
   }
 
@@ -46,6 +52,8 @@ class TransactionItem {
       paymentMethod: PaymentMethod.fromString(map['paymentMethod'] as String),
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       notes: map['notes'] as String?,
+      syncStatus: (map['sync_status'] as String?) ?? 'synced',
+      isDeleted: (map['is_deleted'] as int?) == 1,
     );
   }
 
@@ -58,6 +66,8 @@ class TransactionItem {
     PaymentMethod? paymentMethod,
     DateTime? timestamp,
     String? notes,
+    String? syncStatus,
+    bool? isDeleted,
   }) {
     return TransactionItem(
       id: id ?? this.id,
@@ -68,7 +78,8 @@ class TransactionItem {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       timestamp: timestamp ?? this.timestamp,
       notes: notes ?? this.notes,
+      syncStatus: syncStatus ?? this.syncStatus,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 }
-

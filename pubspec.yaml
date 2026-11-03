@@ -13,6 +13,10 @@ dependencies:
   # State Management
   flutter_riverpod: ^2.5.1
   
+  # Networking & Secure Storage
+  http: ^1.2.1
+  flutter_secure_storage: ^9.2.2
+  
   # Local SQLite Persistence & Preferences
   sqflite: ^2.3.3+1
   sqflite_common_ffi: ^2.3.3
