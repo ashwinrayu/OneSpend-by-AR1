@@ -9,6 +9,10 @@ const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
   console.warn('⚠️ WARNING: DATABASE_URL is not defined in environment variables. Database queries will fail.');
+} else if (connectionString.includes('.supabase.co') && !connectionString.includes('pooler.supabase.com')) {
+  console.warn('⚠️ WARNING: You are using Supabase Direct Connection URL (db.xxx.supabase.co:5432) which resolves to IPv6.');
+  console.warn('   Render free tier does not support IPv6 outbound routing (ENETUNREACH).');
+  console.warn('   Please switch to the Supabase Connection Pooler URL (aws-0-[region].pooler.supabase.com:6543).');
 }
 
 export const pool = new Pool({

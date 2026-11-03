@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/secure_storage_service.dart';
@@ -114,6 +115,12 @@ class AuthController extends StateNotifier<AuthState> {
         isLoading: false,
       );
       return true;
+    } on TimeoutException {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Server took too long to respond. It may be waking up from sleep, or you can Continue Offline.',
+      );
+      return false;
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '').replaceAll('HttpException: ', '');
       state = state.copyWith(isLoading: false, errorMessage: msg);
@@ -143,6 +150,12 @@ class AuthController extends StateNotifier<AuthState> {
         isLoading: false,
       );
       return true;
+    } on TimeoutException {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Server took too long to respond. It may be waking up from sleep, or you can Continue Offline.',
+      );
+      return false;
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '').replaceAll('HttpException: ', '');
       state = state.copyWith(isLoading: false, errorMessage: msg);

@@ -64,7 +64,11 @@ export const register = async (req, res) => {
     });
   } catch (err) {
     console.error('Registration error:', err);
-    return res.status(500).json({ error: 'Server error during registration.', details: err.message });
+    let errorMsg = 'Server error during registration.';
+    if (err.message && err.message.includes('ENETUNREACH')) {
+      errorMsg = 'Database connection error: Render cannot reach Supabase via IPv6. Please set DATABASE_URL on Render to the Supabase Pooler URL (IPv4).';
+    }
+    return res.status(500).json({ error: errorMsg, details: err.message });
   }
 };
 
@@ -112,7 +116,11 @@ export const login = async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
-    return res.status(500).json({ error: 'Server error during login.', details: err.message });
+    let errorMsg = 'Server error during login.';
+    if (err.message && err.message.includes('ENETUNREACH')) {
+      errorMsg = 'Database connection error: Render cannot reach Supabase via IPv6. Please set DATABASE_URL on Render to the Supabase Pooler URL (IPv4).';
+    }
+    return res.status(500).json({ error: errorMsg, details: err.message });
   }
 };
 

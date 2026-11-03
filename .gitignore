@@ -43,4 +43,5 @@ migrate_working_dir/
 **/windows/flutter/ephemeral/
 **/windows/runner/*.exe
 **/windows/runner/*.dll
+build_release/
 

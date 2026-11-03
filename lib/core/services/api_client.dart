@@ -34,7 +34,7 @@ class ApiClient {
         'email': email.trim().toLowerCase(),
         'password': password,
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 45));
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -57,7 +57,7 @@ class ApiClient {
         'email': email.trim().toLowerCase(),
         'password': password,
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 45));
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -73,7 +73,7 @@ class ApiClient {
     final response = await _client.get(
       uri,
       headers: _headers(token),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 45));
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
