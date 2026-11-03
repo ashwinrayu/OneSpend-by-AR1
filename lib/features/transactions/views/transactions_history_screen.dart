@@ -10,6 +10,7 @@ import '../../../core/utils/responsive.dart';
 import '../../../models/category_item.dart';
 import '../../../models/enums.dart';
 import '../../../models/transaction_item.dart';
+import '../../../providers/navigation_provider.dart';
 import '../providers/history_providers.dart';
 import '../providers/transaction_providers.dart';
 import '../widgets/add_transaction_sheet_or_dialog.dart';
@@ -190,6 +191,15 @@ class _TransactionsHistoryScreenState
 
     return Scaffold(
       appBar: AppBar(
+        leading: !isDesktop
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: 'Back to Dashboard',
+                onPressed: () {
+                  ref.read(navigationIndexProvider.notifier).state = 0;
+                },
+              )
+            : null,
         title: const Text('Transaction History'),
         actions: [
           // CSV Export Button

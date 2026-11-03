@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../models/subscription_item.dart';
+import '../../../providers/navigation_provider.dart';
 import '../../settings/providers/preferences_provider.dart';
 import '../../transactions/providers/transaction_providers.dart';
 import '../providers/subscription_providers.dart';
@@ -186,6 +187,15 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     return Scaffold(
       backgroundColor: const Color(0xFF0F1115),
       appBar: AppBar(
+        leading: !isDesktop
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: 'Back to Dashboard',
+                onPressed: () {
+                  ref.read(navigationIndexProvider.notifier).state = 0;
+                },
+              )
+            : null,
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(

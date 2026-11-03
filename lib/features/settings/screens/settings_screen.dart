@@ -8,6 +8,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../models/budget_item.dart';
 import '../../../models/enums.dart';
+import '../../../providers/navigation_provider.dart';
 import '../../analytics/providers/analytics_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../shell/widgets/sync_status_badge.dart';
@@ -320,6 +321,15 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: !isDesktop
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: 'Back to Dashboard',
+                onPressed: () {
+                  ref.read(navigationIndexProvider.notifier).state = 0;
+                },
+              )
+            : null,
         title: const Text('Settings & Preferences'),
       ),
       body: ListView(

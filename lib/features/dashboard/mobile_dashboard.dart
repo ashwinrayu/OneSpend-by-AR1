@@ -21,8 +21,6 @@ class MobileDashboard extends ConsumerStatefulWidget {
 }
 
 class _MobileDashboardState extends ConsumerState<MobileDashboard> {
-  int _activeNavIndex = 0;
-
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(monthlySummaryProvider);
@@ -126,11 +124,6 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
           ),
         ),
       ),
-
-      // Docked Center FAB & Bottom Navigation Bar
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: _buildCenterDockedFAB(context),
-      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
@@ -691,112 +684,6 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
           ),
         );
       }).toList(),
-    );
-  }
-
-  // Center Docked FAB with Gradient & Glow
-  Widget _buildCenterDockedFAB(BuildContext context) {
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF10B981), Color(0xFFF43F5E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF10B981).withOpacity(0.35),
-            blurRadius: 18,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(30),
-          onTap: () => AddTransactionSheetOrDialog.show(context),
-          child: const Center(
-            child: Icon(Icons.add_rounded, color: Colors.white, size: 30),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Bottom Navigation Bar
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      height: 72,
-      decoration: BoxDecoration(
-        color: AppColors.mobileNavBg,
-        border: Border(
-          top: BorderSide(color: AppColors.mobileCardBorder.withOpacity(0.6), width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Home Tab (Active)
-          IconButton(
-            icon: Icon(
-              Icons.home_rounded,
-              color: _activeNavIndex == 0 ? AppColors.primary : const Color(0xFF8E95A5),
-              size: 26,
-            ),
-            onPressed: () {
-              setState(() => _activeNavIndex = 0);
-              ref.read(navigationIndexProvider.notifier).state = 0;
-            },
-          ),
-
-          // Analytics / Insights Tab
-          IconButton(
-            icon: Icon(
-              Icons.bar_chart_rounded,
-              color: _activeNavIndex == 1 ? AppColors.primary : const Color(0xFF8E95A5),
-              size: 26,
-            ),
-            onPressed: () {
-              setState(() => _activeNavIndex = 1);
-              ref.read(navigationIndexProvider.notifier).state = 2; // Analytics screen
-            },
-          ),
-
-          const SizedBox(width: 48), // Spacer for Center Docked FAB
-
-          // History Tab
-          IconButton(
-            icon: Icon(
-              Icons.receipt_long_rounded,
-              color: _activeNavIndex == 2 ? AppColors.primary : const Color(0xFF8E95A5),
-              size: 24,
-            ),
-            onPressed: () {
-              setState(() => _activeNavIndex = 2);
-              ref.read(navigationIndexProvider.notifier).state = 1; // History screen
-            },
-          ),
-
-          // Settings Tab
-          IconButton(
-            icon: Icon(
-              Icons.person_outline_rounded,
-              color: _activeNavIndex == 3 ? AppColors.primary : const Color(0xFF8E95A5),
-              size: 24,
-            ),
-            onPressed: () {
-              setState(() => _activeNavIndex = 3);
-              ref.read(navigationIndexProvider.notifier).state = 4; // Settings screen
-            },
-          ),
-        ],
-      ),
     );
   }
 }

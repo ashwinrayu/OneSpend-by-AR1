@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../providers/navigation_provider.dart';
 import '../providers/analytics_providers.dart';
 import '../widgets/category_donut_chart.dart';
 import '../widgets/highest_expense_categories_list.dart';
@@ -43,6 +44,15 @@ class AnalyticsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: !isDesktop
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: 'Back to Dashboard',
+                onPressed: () {
+                  ref.read(navigationIndexProvider.notifier).state = 0;
+                },
+              )
+            : null,
         title: const Text('Analytics & Visualizations'),
       ),
       body: SingleChildScrollView(
