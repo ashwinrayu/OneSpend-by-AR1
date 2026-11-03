@@ -31,3 +31,4 @@ target_link_libraries(${BINARY_NAME} PRIVATE
 )
 
 add_dependencies(${BINARY_NAME} flutter_assemble)
+

@@ -20,3 +20,4 @@ router.delete('/:id', deleteTransaction);
 router.post('/sync', syncTransactions);
 
 export default router;
+

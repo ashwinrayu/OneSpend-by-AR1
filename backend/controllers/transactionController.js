@@ -265,3 +265,4 @@ export const syncTransactions = async (req, res) => {
     client.release();
   }
 };
+

@@ -58,3 +58,4 @@ std::string Utf8FromUtf16(const wchar_t* utf16_string) {
   utf8_string.pop_back(); // Remove null character
   return utf8_string;
 }
+

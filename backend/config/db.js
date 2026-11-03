@@ -72,3 +72,4 @@ export const initDb = async () => {
     console.error('Database connection / initialization notice:', err.message);
   }
 };
+
