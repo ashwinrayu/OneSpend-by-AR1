@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../features/transactions/widgets/add_transaction_sheet_or_dialog.dart';
 import '../../providers/navigation_provider.dart';
-import '../../providers/theme_provider.dart';
 
 class DesktopSidebar extends ConsumerWidget {
   const DesktopSidebar({super.key});

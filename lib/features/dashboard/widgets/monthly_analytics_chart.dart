@@ -54,7 +54,7 @@ class MonthlyAnalyticsChart extends StatelessWidget {
                 lineTouchData: LineTouchData(
                   handleBuiltInTouches: true,
                   touchTooltipData: LineTouchTooltipData(
-                    tooltipBgColor: const Color(0xFF262B37),
+                    getTooltipColor: (touchedSpot) => const Color(0xFF262B37),
                     tooltipRoundedRadius: 8,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
@@ -200,8 +200,8 @@ class MonthlyAnalyticsChart extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

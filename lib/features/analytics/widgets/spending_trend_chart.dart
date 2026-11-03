@@ -80,7 +80,7 @@ class SpendingTrendChart extends StatelessWidget {
                   maxY: maxY,
                   barTouchData: BarTouchData(
                     touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: theme.colorScheme.surfaceVariant,
+                      getTooltipColor: (group) => theme.colorScheme.surfaceVariant,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final day = group.x;
                         final amount = rod.toY;
