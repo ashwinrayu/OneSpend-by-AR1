@@ -20,6 +20,7 @@ class DesktopSidebar extends ConsumerWidget {
       (Icons.dashboard_rounded, 'Dashboard'),
       (Icons.receipt_long_rounded, 'Transactions'),
       (Icons.insights_rounded, 'Analytics'),
+      (Icons.savings_rounded, 'Budgets'),
       (Icons.settings_rounded, 'Settings'),
     ];
 

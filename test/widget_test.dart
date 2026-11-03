@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/models/enums.dart';
+import 'package:onespend/models/subscription_item.dart';
 import 'package:onespend/models/transaction_item.dart';
 import 'package:onespend/core/services/export_service.dart';
 import 'package:onespend/core/utils/formatters.dart';
@@ -101,5 +102,37 @@ void main() {
 
     Formatters.activeCurrencySymbol = '₹';
     expect(Formatters.formatCurrency(1250.0).contains('₹'), true);
+  });
+
+  test('SubscriptionItem normalized amount and serialization test', () {
+    final subMonthly = SubscriptionItem(
+      id: 'sub_test_1',
+      name: 'Netflix 4K',
+      amount: 649.0,
+      billingCycle: 'Monthly',
+      category: 'Entertainment',
+      nextBillingDate: DateTime.now().add(const Duration(days: 5)),
+      paymentMethod: 'UPI',
+    );
+    expect(subMonthly.monthlyNormalizedAmount, 649.0);
+    expect(subMonthly.dueStatusString.contains('Due in'), true);
+
+    final subYearly = SubscriptionItem(
+      id: 'sub_test_2',
+      name: 'Amazon Prime',
+      amount: 1499.0,
+      billingCycle: 'Yearly',
+      category: 'Shopping',
+      nextBillingDate: DateTime.now().add(const Duration(days: 30)),
+    );
+    expect((subYearly.monthlyNormalizedAmount - (1499.0 / 12)).abs() < 0.01, true);
+
+    final map = subMonthly.toMap();
+    final restored = SubscriptionItem.fromMap(map);
+    expect(restored.id, subMonthly.id);
+    expect(restored.name, subMonthly.name);
+    expect(restored.amount, subMonthly.amount);
+    expect(restored.billingCycle, 'Monthly');
+    expect(restored.isActive, true);
   });
 }

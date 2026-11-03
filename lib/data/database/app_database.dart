@@ -44,7 +44,7 @@ class AppDatabase {
 
     return await openDatabase(
       dbPath,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -85,6 +85,19 @@ class AppDatabase {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        billingCycle TEXT NOT NULL,
+        category TEXT NOT NULL,
+        nextBillingDate INTEGER NOT NULL,
+        paymentMethod TEXT NOT NULL,
+        isActive INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
+
     // Seed default categories
     final batch = db.batch();
     for (final cat in MockData.defaultCategories) {
@@ -99,6 +112,54 @@ class AppDatabase {
       batch.insert('transactions', tx.toMap());
     }
 
+    // Seed sample subscriptions
+    final now = DateTime.now();
+    final sampleSubs = [
+      {
+        'id': 'sub_1',
+        'name': 'Netflix Premium 4K',
+        'amount': 649.0,
+        'billingCycle': 'Monthly',
+        'category': 'Entertainment',
+        'nextBillingDate': now.add(const Duration(days: 4)).millisecondsSinceEpoch,
+        'paymentMethod': 'UPI',
+        'isActive': 1,
+      },
+      {
+        'id': 'sub_2',
+        'name': 'Spotify Duo',
+        'amount': 199.0,
+        'billingCycle': 'Monthly',
+        'category': 'Entertainment',
+        'nextBillingDate': now.add(const Duration(days: 12)).millisecondsSinceEpoch,
+        'paymentMethod': 'Card',
+        'isActive': 1,
+      },
+      {
+        'id': 'sub_3',
+        'name': 'Fiber Broadband (Airtel)',
+        'amount': 1199.0,
+        'billingCycle': 'Monthly',
+        'category': 'Bills',
+        'nextBillingDate': now.add(const Duration(days: 7)).millisecondsSinceEpoch,
+        'paymentMethod': 'UPI',
+        'isActive': 1,
+      },
+      {
+        'id': 'sub_4',
+        'name': 'Gym & Fitness Pass',
+        'amount': 2200.0,
+        'billingCycle': 'Monthly',
+        'category': 'Other',
+        'nextBillingDate': now.add(const Duration(days: 18)).millisecondsSinceEpoch,
+        'paymentMethod': 'UPI',
+        'isActive': 1,
+      },
+    ];
+    for (final sub in sampleSubs) {
+      batch.insert('subscriptions', sub);
+    }
+
     await batch.commit(noResult: true);
   }
 
@@ -109,6 +170,61 @@ class AppDatabase {
       } catch (_) {}
       try {
         await db.execute("ALTER TABLE transactions ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
+      } catch (_) {}
+    }
+    if (oldVersion < 3) {
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS subscriptions (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            amount REAL NOT NULL,
+            billingCycle TEXT NOT NULL,
+            category TEXT NOT NULL,
+            nextBillingDate INTEGER NOT NULL,
+            paymentMethod TEXT NOT NULL,
+            isActive INTEGER NOT NULL DEFAULT 1
+          )
+        ''');
+
+        final now = DateTime.now();
+        final sampleSubs = [
+          {
+            'id': 'sub_1',
+            'name': 'Netflix Premium 4K',
+            'amount': 649.0,
+            'billingCycle': 'Monthly',
+            'category': 'Entertainment',
+            'nextBillingDate': now.add(const Duration(days: 4)).millisecondsSinceEpoch,
+            'paymentMethod': 'UPI',
+            'isActive': 1,
+          },
+          {
+            'id': 'sub_2',
+            'name': 'Spotify Duo',
+            'amount': 199.0,
+            'billingCycle': 'Monthly',
+            'category': 'Entertainment',
+            'nextBillingDate': now.add(const Duration(days: 12)).millisecondsSinceEpoch,
+            'paymentMethod': 'Card',
+            'isActive': 1,
+          },
+          {
+            'id': 'sub_3',
+            'name': 'Fiber Broadband (Airtel)',
+            'amount': 1199.0,
+            'billingCycle': 'Monthly',
+            'category': 'Bills',
+            'nextBillingDate': now.add(const Duration(days: 7)).millisecondsSinceEpoch,
+            'paymentMethod': 'UPI',
+            'isActive': 1,
+          },
+        ];
+        final batch = db.batch();
+        for (final sub in sampleSubs) {
+          batch.insert('subscriptions', sub, conflictAlgorithm: ConflictAlgorithm.ignore);
+        }
+        await batch.commit(noResult: true);
       } catch (_) {}
     }
   }

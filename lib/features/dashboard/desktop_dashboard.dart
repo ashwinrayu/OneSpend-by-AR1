@@ -240,7 +240,7 @@ class _DesktopDashboardState extends ConsumerState<DesktopDashboard> {
                     borderRadius: BorderRadius.circular(10),
                     onTap: () {
                       ref.read(navigationIndexProvider.notifier).state =
-                          item.$3.clamp(0, 3);
+                          item.$3.clamp(0, 4);
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),

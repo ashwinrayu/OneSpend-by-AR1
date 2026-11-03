@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../models/budget_item.dart';
 import '../../models/category_item.dart';
 import '../../models/enums.dart';
+import '../../models/subscription_item.dart';
 import '../../models/transaction_item.dart';
 import '../database/app_database.dart';
 
@@ -231,5 +232,82 @@ class ExpenseRepository {
       budgetRemaining: budgetRemaining,
       budgetBurnPercentage: burnPercentage,
     );
+  }
+
+  // Subscriptions CRUD & Automation
+  Future<List<SubscriptionItem>> getAllSubscriptions() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'subscriptions',
+      orderBy: 'nextBillingDate ASC',
+    );
+    return maps.map((map) => SubscriptionItem.fromMap(map)).toList();
+  }
+
+  Future<void> insertSubscription(SubscriptionItem sub) async {
+    final db = await _db;
+    await db.insert(
+      'subscriptions',
+      sub.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateSubscription(SubscriptionItem sub) async {
+    final db = await _db;
+    await db.update(
+      'subscriptions',
+      sub.toMap(),
+      where: 'id = ?',
+      whereArgs: [sub.id],
+    );
+  }
+
+  Future<void> deleteSubscription(String id) async {
+    final db = await _db;
+    await db.delete(
+      'subscriptions',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> markSubscriptionPaid(SubscriptionItem sub) async {
+    final db = await _db;
+    final now = DateTime.now();
+
+    // 1. Insert a transaction for this billing cycle
+    final txItem = TransactionItem(
+      id: 'tx_sub_${sub.id}_${now.millisecondsSinceEpoch}',
+      title: sub.name,
+      amount: sub.amount,
+      type: TransactionType.expense,
+      category: sub.category,
+      paymentMethod: PaymentMethod.fromString(sub.paymentMethod),
+      timestamp: now,
+      notes: 'Recurring ${sub.billingCycle} Subscription',
+      syncStatus: 'pending',
+    );
+    await insertTransaction(txItem);
+
+    // 2. Advance nextBillingDate to next cycle
+    DateTime nextDate;
+    if (sub.billingCycle.toLowerCase() == 'yearly') {
+      nextDate = DateTime(
+        sub.nextBillingDate.year + 1,
+        sub.nextBillingDate.month,
+        sub.nextBillingDate.day,
+      );
+    } else if (sub.billingCycle.toLowerCase() == 'weekly') {
+      nextDate = sub.nextBillingDate.add(const Duration(days: 7));
+    } else {
+      // Monthly
+      final nextMonth = sub.nextBillingDate.month == 12 ? 1 : sub.nextBillingDate.month + 1;
+      final nextYear = sub.nextBillingDate.month == 12 ? sub.nextBillingDate.year + 1 : sub.nextBillingDate.year;
+      nextDate = DateTime(nextYear, nextMonth, sub.nextBillingDate.day);
+    }
+
+    final updated = sub.copyWith(nextBillingDate: nextDate);
+    await updateSubscription(updated);
   }
 }

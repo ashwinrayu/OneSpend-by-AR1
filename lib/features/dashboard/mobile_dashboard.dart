@@ -397,13 +397,11 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
               onTap: () => AddTransactionSheetOrDialog.show(context),
             ),
             _buildActionItem(
-              icon: Icons.swap_horiz_rounded,
-              label: 'Transfer',
-              borderColor: const Color(0xFFF43F5E),
+              icon: Icons.savings_rounded,
+              label: 'Budgets',
+              borderColor: const Color(0xFF10B981),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Account transfer dialog opened')),
-                );
+                ref.read(navigationIndexProvider.notifier).state = 3; // Budgets screen
               },
             ),
             _buildActionItem(
@@ -794,7 +792,7 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
             ),
             onPressed: () {
               setState(() => _activeNavIndex = 3);
-              ref.read(navigationIndexProvider.notifier).state = 3; // Settings screen
+              ref.read(navigationIndexProvider.notifier).state = 4; // Settings screen
             },
           ),
         ],

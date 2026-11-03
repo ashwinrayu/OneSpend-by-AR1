@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/analytics/screens/analytics_screen.dart';
+import '../../features/budgets/screens/budgets_screen.dart';
 import '../../features/dashboard/desktop_dashboard.dart';
 import '../../features/dashboard/mobile_dashboard.dart';
 import '../../features/settings/screens/settings_screen.dart';
@@ -38,6 +39,7 @@ class ResponsiveShell extends ConsumerWidget {
           ),
           TransactionsScreen(),
           AnalyticsScreen(),
+          BudgetsScreen(),
           SettingsScreen(),
         ];
 
