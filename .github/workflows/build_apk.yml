@@ -3,6 +3,9 @@ name: Build Android APK & Web Release
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - '.github/workflows/keep_alive.yml'
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,32 @@
+name: Render Backend 24/7 Keep-Alive & Health Cron
+
+on:
+  schedule:
+    # Runs every 10 minutes (Render free tier spins down after 15 minutes of inactivity)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep_alive:
+    name: Ping OneSpend Backend Health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping Render Backend Health
+        run: |
+          echo "📡 Pinging OneSpend Render Backend at $(date)..."
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" "https://onespend-by-ar1.onrender.com/health")
+          echo "$RESPONSE"
+          
+          STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Backend is active, awake, and healthy (HTTP 200)!"
+          else
+            echo "⚠️ Backend responded with HTTP $STATUS"
+          fi
+
+      - name: Verify App Version API
+        run: |
+          echo "📲 Checking In-App Auto-Updater endpoint..."
+          curl -s "https://onespend-by-ar1.onrender.com/api/app/version"
