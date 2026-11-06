@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/services/sync_service.dart';
+import '../../core/services/update_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/enums.dart';
 import '../../models/transaction_item.dart';
@@ -21,6 +22,31 @@ class MobileDashboard extends ConsumerStatefulWidget {
 }
 
 class _MobileDashboardState extends ConsumerState<MobileDashboard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForCloudUpdates();
+    });
+  }
+
+  void _checkForCloudUpdates() {
+    Future.delayed(const Duration(seconds: 4), () async {
+      if (!mounted) return;
+      try {
+        final updateService = ref.read(updateServiceProvider);
+        final updateInfo = await updateService.checkForUpdate();
+        if (updateInfo != null && updateInfo.hasUpdate && mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: !updateInfo.isMandatory,
+            builder: (context) => AppUpdateDialog(updateInfo: updateInfo),
+          );
+        }
+      } catch (_) {}
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(monthlySummaryProvider);

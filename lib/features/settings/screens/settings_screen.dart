@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/backup_service.dart';
 import '../../../core/services/sync_service.dart';
+import '../../../core/services/update_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../models/budget_item.dart';
@@ -653,14 +654,65 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // 6. About OneSpend
+          // 6. About OneSpend & Updates
           Text(
-            'About',
+            'Updates & About',
             style: theme.textTheme.titleSmall?.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 12),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: AppColors.income.withOpacity(0.3)),
+            ),
+            color: AppColors.income.withOpacity(0.08),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.income.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.cloud_sync_rounded, color: AppColors.income, size: 20),
+              ),
+              title: const Text('Check for Cloud Updates', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              subtitle: const Text('In-App Over-The-Air updater', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.income),
+              onTap: () async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Checking Render Cloud for updates...'),
+                    duration: Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Color(0xFF1E222B),
+                  ),
+                );
+                final updateService = ref.read(updateServiceProvider);
+                final updateInfo = await updateService.checkForUpdate();
+                if (updateInfo != null && updateInfo.hasUpdate && context.mounted) {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: !updateInfo.isMandatory,
+                    builder: (ctx) => AppUpdateDialog(updateInfo: updateInfo),
+                  );
+                } else if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('OneSpend is up to date! (v${updateInfo?.currentVersion ?? "1.0.2"})'),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: const Color(0xFF10B981),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
           const SizedBox(height: 8),
           Card(
             child: ListTile(

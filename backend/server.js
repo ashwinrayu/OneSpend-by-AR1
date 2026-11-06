@@ -26,8 +26,21 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     app: 'OneSpend by AR1 API',
-    version: '1.0.0',
+    version: '1.0.2',
     timestamp: new Date().toISOString(),
+  });
+});
+
+// App Version & In-App Cloud Auto-Updater Endpoint
+app.get('/api/app/version', (req, res) => {
+  res.status(200).json({
+    latestVersion: '1.0.2',
+    buildNumber: 3,
+    releaseDate: '2026-11-07',
+    releaseNotes: '• Direct In-App Cloud Auto-Updater\n• Real-time bidirectional Cloud Delta Sync\n• PostgreSQL decimal accuracy fix\n• Obsidian & Emerald theme enhancements',
+    downloadUrl: 'https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/latest/app-release.apk',
+    webAppUrl: 'https://onespend.vercel.app',
+    isMandatory: false
   });
 });
 

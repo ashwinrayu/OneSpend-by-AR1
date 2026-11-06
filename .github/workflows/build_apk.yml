@@ -45,3 +45,18 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish to GitHub Releases for Cloud In-App Auto-Update
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: latest
+          name: OneSpend by AR1 (Latest Production)
+          body: |
+            Automated production build from commit ${{ github.sha }}.
+            • Direct In-App Cloud Auto-Updater enabled
+            • Real-time bidirectional Cloud Delta Sync with Render PostgreSQL
+            • Obsidian Dark & Emerald responsive UI
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
