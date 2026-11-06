@@ -92,6 +92,15 @@ class ExpenseRepository {
   }
 
   // Sync operations
+  Future<void> markAllTransactionsAsPending() async {
+    final db = await _db;
+    await db.update(
+      'transactions',
+      {'sync_status': 'pending'},
+      where: 'is_deleted = 0',
+    );
+  }
+
   Future<List<TransactionItem>> getPendingSyncTransactions() async {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -137,10 +146,15 @@ class ExpenseRepository {
         final timestampStr = map['timestamp'] as String;
         final timestampMs = DateTime.parse(timestampStr).millisecondsSinceEpoch;
 
+        final rawAmount = map['amount'];
+        final double amount = (rawAmount is num)
+            ? rawAmount.toDouble()
+            : (double.tryParse(rawAmount?.toString() ?? '') ?? 0.0);
+
         final localMap = {
           'id': id,
           'title': map['title'] as String,
-          'amount': (map['amount'] as num).toDouble(),
+          'amount': amount,
           'type': (map['type'] as String).toLowerCase(),
           'category': map['category'] as String,
           'paymentMethod': (map['payment_method'] as String?) ?? 'UPI',

@@ -719,9 +719,9 @@
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <div id="mobileAuthHeaderArea"></div>
-          <div class="sync-status" style="margin: 0; padding: 4px 8px;">
+          <div class="sync-status" onclick="syncWebWithCloud(false)" style="margin: 0; padding: 4px 8px; cursor: pointer;" title="Tap to sync with Cloud">
             <div class="sync-dot"></div>
-            <span style="font-size: 11px;">Live</span>
+            <span style="font-size: 11px;">Live Sync</span>
           </div>
         </div>
       </div>
@@ -733,7 +733,7 @@
         </div>
         <div class="header-actions">
           <div id="authHeaderArea"></div>
-          <div class="sync-status">
+          <div class="sync-status" onclick="syncWebWithCloud(false)" style="cursor: pointer;" title="Click to sync with Cloud">
             <div class="sync-dot"></div>
             <span id="syncText">Render Live Cloud: Synced</span>
           </div>
@@ -1478,15 +1478,17 @@
         return;
       }
 
+      let targetTx;
       if (id) {
-        const index = transactions.findIndex(t => t.id === id);
+        const index = transactions.findIndex(t => String(t.id) === String(id));
+        targetTx = { id: String(id), title, amount, type, category, payment, date, notes };
         if (index !== -1) {
-          transactions[index] = { id, title, amount, type, category, payment, date, notes };
+          transactions[index] = targetTx;
         }
         showToast('Transaction updated successfully!', 'success');
       } else {
-        const newTx = {
-          id: Date.now().toString(),
+        targetTx = {
+          id: 'tx_web_' + Date.now().toString(),
           title,
           amount,
           type,
@@ -1495,19 +1497,40 @@
           date,
           notes
         };
-        transactions.unshift(newTx);
+        transactions.unshift(targetTx);
         showToast('Transaction added successfully!', 'success');
       }
 
       closeTxModal();
       persistData();
+
+      // If signed in, sync immediately to Cloud PostgreSQL
+      if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
+        syncWebWithCloud(true);
+      }
     }
 
     function deleteTransaction(id) {
       if (confirm('Are you sure you want to delete this transaction?')) {
-        transactions = transactions.filter(t => t.id !== id);
+        const deletedTx = transactions.find(t => String(t.id) === String(id));
+        transactions = transactions.filter(t => String(t.id) !== String(id));
         persistData();
         showToast('Transaction removed.', 'info');
+
+        // If signed in, inform Cloud
+        const token = localStorage.getItem(STORAGE_KEY_TOKEN);
+        if (token && deletedTx) {
+          fetch('https://onespend-by-ar1.onrender.com/api/transactions/sync', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              clientChanges: [normalizeClientChange(deletedTx, true)]
+            })
+          }).catch(console.error);
+        }
       }
     }
 
@@ -1664,9 +1687,132 @@
       }
     }
 
-    // Auth System
+    // Auth & Cloud Sync System
     const STORAGE_KEY_TOKEN = 'onespend_auth_token';
     const STORAGE_KEY_USER = 'onespend_auth_user';
+    const STORAGE_KEY_WEB_SYNC = 'onespend_web_last_synced_at';
+    let isWebSyncing = false;
+
+    function normalizeServerTransaction(s) {
+      const d = new Date(s.timestamp);
+      const dateStr = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : (s.date || new Date().toISOString().split('T')[0]);
+      const typeNormalized = (s.type || 'expense').toLowerCase() === 'income' ? 'Income' : 'Expense';
+      return {
+        id: String(s.id),
+        title: s.title,
+        amount: parseFloat(s.amount) || 0,
+        type: typeNormalized,
+        category: s.category || 'Other',
+        payment: s.payment_method || s.payment || 'UPI',
+        date: dateStr,
+        timestamp: s.timestamp || new Date(dateStr).toISOString(),
+        notes: s.notes || ''
+      };
+    }
+
+    function normalizeClientChange(t, isDeleted = false) {
+      let ts;
+      try {
+        ts = t.timestamp ? new Date(t.timestamp).toISOString() : new Date(t.date || Date.now()).toISOString();
+      } catch (_) {
+        ts = new Date().toISOString();
+      }
+      return {
+        id: String(t.id),
+        title: t.title,
+        amount: parseFloat(t.amount) || 0,
+        type: (t.type || 'expense').toLowerCase(),
+        category: t.category || 'Other',
+        paymentMethod: t.payment || 'UPI',
+        timestamp: ts,
+        notes: t.notes || '',
+        isDeleted: Boolean(isDeleted)
+      };
+    }
+
+    async function syncWebWithCloud(silent = false) {
+      const token = localStorage.getItem(STORAGE_KEY_TOKEN);
+      if (!token) return;
+
+      if (isWebSyncing) return;
+      isWebSyncing = true;
+      updateSyncStatusUI('syncing');
+
+      try {
+        const clientChanges = transactions.map(t => normalizeClientChange(t, false));
+        const lastSyncedAt = localStorage.getItem(STORAGE_KEY_WEB_SYNC) || null;
+
+        const res = await fetch('https://onespend-by-ar1.onrender.com/api/transactions/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            lastSyncedAt: lastSyncedAt,
+            clientChanges: clientChanges
+          })
+        });
+
+        if (res.status === 401) {
+          logoutWeb();
+          showToast('Session expired. Please sign in again.', 'warning');
+          return;
+        }
+
+        const data = await res.json();
+        if (res.ok) {
+          if (data.serverChanges && Array.isArray(data.serverChanges)) {
+            const txMap = new Map();
+            transactions.forEach(t => txMap.set(String(t.id), t));
+
+            data.serverChanges.forEach(sc => {
+              if (sc.is_deleted) {
+                txMap.delete(String(sc.id));
+              } else {
+                txMap.set(String(sc.id), normalizeServerTransaction(sc));
+              }
+            });
+
+            transactions = Array.from(txMap.values());
+            transactions.sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp));
+            persistData();
+          }
+
+          if (data.syncedAt) {
+            localStorage.setItem(STORAGE_KEY_WEB_SYNC, data.syncedAt);
+          }
+
+          updateSyncStatusUI('synced');
+          if (!silent) {
+            showToast('Cloud sync complete! Data synchronized with mobile.', 'success');
+          }
+        } else {
+          updateSyncStatusUI('error');
+          if (!silent) showToast(data.error || 'Sync encountered an issue.', 'error');
+        }
+      } catch (err) {
+        console.error('Web cloud sync failed:', err);
+        updateSyncStatusUI('offline');
+      } finally {
+        isWebSyncing = false;
+      }
+    }
+
+    function updateSyncStatusUI(status) {
+      const syncText = document.getElementById('syncText');
+      if (syncText) {
+        if (status === 'syncing') {
+          syncText.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin"></i> Syncing...';
+        } else if (status === 'synced') {
+          syncText.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Render Live: Synced';
+        } else if (status === 'error') {
+          syncText.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Sync Error';
+        } else {
+          syncText.innerHTML = '<i class="fa-solid fa-cloud"></i> Offline Vault';
+        }
+      }
+    }
 
     function renderAuthStatus() {
       const token = localStorage.getItem(STORAGE_KEY_TOKEN);
@@ -1684,6 +1830,9 @@
             <span style="font-size: 12px; font-weight: 600; color: var(--primary); display: inline-flex; align-items: center; gap: 5px;">
               <i class="fa-solid fa-circle-user"></i> ${escapeHtml(name)}
             </span>
+            <button class="btn btn-outline-success" onclick="syncWebWithCloud(false)" title="Sync Now with Mobile & Cloud" style="padding: 4px 10px; font-size: 11px; border: 1px solid var(--primary); color: var(--primary); background: rgba(16, 185, 129, 0.1);">
+              <i class="fa-solid fa-arrows-rotate"></i> Sync
+            </button>
             <button class="btn btn-secondary" onclick="logoutWeb()" style="padding: 4px 10px; font-size: 11px;">
               Sign Out
             </button>
@@ -1691,6 +1840,9 @@
         `;
         if (desktopContainer) desktopContainer.innerHTML = html;
         if (mobileContainer) mobileContainer.innerHTML = `
+          <button class="btn btn-outline-success" onclick="syncWebWithCloud(false)" style="padding: 3px 6px; font-size: 10px; border: 1px solid var(--primary); color: var(--primary);">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
           <button class="btn btn-secondary" onclick="logoutWeb()" style="padding: 3px 8px; font-size: 10px;">
             Sign Out
           </button>
@@ -1763,7 +1915,9 @@
           localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(data.user));
           closeAuthModal();
           renderAuthStatus();
-          showToast(`Welcome back, ${data.user.full_name || data.user.email}!`, 'success');
+          showToast(`Welcome back, ${data.user.full_name || data.user.email}! Syncing vault...`, 'success');
+          // Immediate bidirectional cloud sync
+          syncWebWithCloud(false);
         } else {
           showToast(data.error || 'Login failed. Please check your credentials.', 'error');
         }
@@ -1797,7 +1951,9 @@
           localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(data.user));
           closeAuthModal();
           renderAuthStatus();
-          showToast(`Account created! Welcome, ${data.user.full_name || data.user.email}!`, 'success');
+          showToast(`Account created! Welcome, ${data.user.full_name || data.user.email}! Syncing vault...`, 'success');
+          // Immediate bidirectional cloud sync
+          syncWebWithCloud(false);
         } else {
           showToast(data.error || 'Registration failed.', 'error');
         }
@@ -1812,7 +1968,9 @@
     function logoutWeb() {
       localStorage.removeItem(STORAGE_KEY_TOKEN);
       localStorage.removeItem(STORAGE_KEY_USER);
+      localStorage.removeItem(STORAGE_KEY_WEB_SYNC);
       renderAuthStatus();
+      updateSyncStatusUI('offline');
       showToast('Signed out successfully. Running in offline Guest Mode.', 'info');
     }
 
@@ -1826,11 +1984,21 @@
         .replace(/'/g, '&#039;');
     }
 
-    // Initialize UI on page load
+    // Initialize UI on page load & trigger background cloud sync
     window.addEventListener('DOMContentLoaded', () => {
       renderAll();
       renderAuthStatus();
+      if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
+        syncWebWithCloud(true);
+      }
     });
+
+    // Auto-sync in background every 60 seconds if authenticated
+    setInterval(() => {
+      if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
+        syncWebWithCloud(true);
+      }
+    }, 60000);
   </script>
 </body>
 </html>

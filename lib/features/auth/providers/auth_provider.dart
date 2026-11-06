@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/secure_storage_service.dart';
 
@@ -175,6 +176,8 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
     await _storage.clearAuth();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('onespend_last_synced_at');
     state = const AuthState(isLoading: false);
   }
 }

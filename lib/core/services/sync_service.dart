@@ -85,6 +85,17 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
         syncNow();
       }
     });
+
+    // Listen for authentication transitions (e.g. Guest -> Signed In)
+    ref.listen<AuthState>(authControllerProvider, (previous, next) async {
+      if (next.isAuthenticated && !next.isGuest && (previous == null || !previous.isAuthenticated || previous.isGuest)) {
+        try {
+          final repo = ref.read(expenseRepositoryProvider);
+          await repo.markAllTransactionsAsPending();
+        } catch (_) {}
+        syncNow();
+      }
+    });
   }
 
   @override

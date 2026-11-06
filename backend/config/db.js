@@ -5,6 +5,9 @@ dotenv.config();
 
 const { Pool } = pg;
 
+// Parse PostgreSQL NUMERIC (OID 1700) as JavaScript float instead of string
+pg.types.setTypeParser(1700, (val) => (val === null ? null : parseFloat(val)));
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
