@@ -30,3 +30,4 @@ jobs:
         run: |
           echo "📲 Checking In-App Auto-Updater endpoint..."
           curl -s "https://onespend-by-ar1.onrender.com/api/app/version"
+

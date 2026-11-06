@@ -84,6 +84,28 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
 
                 // 2. Smart Magic Add Bar (Natural Language Instant Logger)
                 const SmartMagicAddBar(),
+                const SizedBox(height: 6),
+
+                // Live Cloud Build Active Banner
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.income.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.income.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.verified_rounded, color: AppColors.income, size: 14),
+                      SizedBox(width: 6),
+                      Text(
+                        'v1.1.1 Cloud OTA Live ⚡ Auto-Updater Verified',
+                        style: TextStyle(color: AppColors.income, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 10),
 
                 // 3. Hero Balance Card
