@@ -1,5 +1,6 @@
 import 'dart:math';
 import '../../models/budget_item.dart';
+import '../../models/enums.dart';
 import '../../models/transaction_item.dart';
 
 class FinancialHealthMetrics {
@@ -153,3 +154,4 @@ class FinancialHealthService {
     );
   }
 }
+

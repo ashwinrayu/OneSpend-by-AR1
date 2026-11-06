@@ -283,3 +283,4 @@ class FinancialHealthCard extends ConsumerWidget {
     );
   }
 }
+

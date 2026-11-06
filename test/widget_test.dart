@@ -151,7 +151,7 @@ void main() {
     expect(res2.isValid, true);
     expect(res2.amount, 75000.0);
     expect(res2.type, TransactionType.income);
-    expect(res2.paymentMethod, PaymentMethod.bankTransfer);
+    expect(res2.paymentMethod, PaymentMethod.bank);
 
     final res3 = SmartExpenseParser.parse('uber 450 card');
     expect(res3.isValid, true);

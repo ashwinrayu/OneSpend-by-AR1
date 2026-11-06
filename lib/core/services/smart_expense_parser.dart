@@ -118,12 +118,10 @@ class SmartExpenseParser {
     PaymentMethod detectedMethod = PaymentMethod.upi;
     if (lower.contains('cash')) {
       detectedMethod = PaymentMethod.cash;
-    } else if (lower.contains('credit') || lower.contains('card') || lower.contains('cc')) {
+    } else if (lower.contains('credit') || lower.contains('card') || lower.contains('cc') || lower.contains('debit')) {
       detectedMethod = PaymentMethod.creditCard;
     } else if (lower.contains('bank') || lower.contains('neft') || lower.contains('rtgs') || lower.contains('netbanking')) {
-      detectedMethod = PaymentMethod.bankTransfer;
-    } else if (lower.contains('debit')) {
-      detectedMethod = PaymentMethod.debitCard;
+      detectedMethod = PaymentMethod.bank;
     }
 
     // 4. Detect Category
@@ -168,3 +166,4 @@ class SmartExpenseParser {
     );
   }
 }
+

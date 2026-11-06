@@ -372,3 +372,4 @@ class _SmartBillSplitterDialogState extends ConsumerState<SmartBillSplitterDialo
     );
   }
 }
+

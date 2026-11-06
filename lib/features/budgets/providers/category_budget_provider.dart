@@ -52,3 +52,4 @@ final categoryBudgetsProvider =
     StateNotifierProvider<CategoryBudgetsNotifier, Map<String, double>>((ref) {
   return CategoryBudgetsNotifier();
 });
+

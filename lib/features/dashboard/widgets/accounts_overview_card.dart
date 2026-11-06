@@ -30,8 +30,7 @@ class AccountsOverviewCard extends ConsumerWidget {
         case PaymentMethod.cash:
           cashNet += amount;
           break;
-        case PaymentMethod.bankTransfer:
-        case PaymentMethod.debitCard:
+        case PaymentMethod.bank:
           bankNet += amount;
           break;
         case PaymentMethod.creditCard:
@@ -180,3 +179,4 @@ class _AccountDisplay {
     required this.color,
   });
 }
+
