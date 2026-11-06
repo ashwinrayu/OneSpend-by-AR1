@@ -9,6 +9,7 @@ import '../../../models/subscription_item.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../settings/providers/preferences_provider.dart';
 import '../../transactions/providers/transaction_providers.dart';
+import '../providers/category_budget_provider.dart';
 import '../providers/subscription_providers.dart';
 
 class BudgetsScreen extends ConsumerStatefulWidget {
@@ -32,6 +33,70 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _showEditCategoryBudgetDialog(BuildContext context, String category, double currentLimit) {
+    final controller = TextEditingController(text: currentLimit.toStringAsFixed(0));
+    final currency = ref.read(currencyProvider);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF181B22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.edit_note_rounded, color: AppColors.income),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Set Budget: $category',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: TextField(
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          decoration: InputDecoration(
+            prefixText: '$currency ',
+            prefixStyle: const TextStyle(color: AppColors.income, fontWeight: FontWeight.bold),
+            labelText: 'Monthly Limit',
+            labelStyle: const TextStyle(color: Colors.white70),
+            filled: true,
+            fillColor: const Color(0xFF12141A),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.income),
+            onPressed: () async {
+              final val = double.tryParse(controller.text.trim());
+              if (val != null && val >= 0) {
+                await ref.read(categoryBudgetsProvider.notifier).setCategoryBudget(category, val);
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Updated $category budget to $currency ${val.toStringAsFixed(0)}'),
+                      backgroundColor: AppColors.income,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Save Limit', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddSubscriptionDialog(BuildContext context) {
@@ -522,44 +587,68 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF181B22),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: const Color(0xFF262B35)),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            item.category,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                          Text(
-                            '${Formatters.formatCurrency(item.spent)} / ${Formatters.formatCurrency(item.limit)}',
-                            style: TextStyle(color: progressColor, fontWeight: FontWeight.bold, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: item.percentage.clamp(0.0, 1.0),
-                          backgroundColor: const Color(0xFF262B35),
-                          valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                          minHeight: 7,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => _showEditCategoryBudgetDialog(context, item.category, item.limit),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      item.category,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Icon(Icons.edit_outlined, color: Colors.white30, size: 14),
+                                  ],
+                                ),
+                                Text(
+                                  '${Formatters.formatCurrency(item.spent)} / ${Formatters.formatCurrency(item.limit)}',
+                                  style: TextStyle(color: progressColor, fontWeight: FontWeight.bold, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value: item.percentage.clamp(0.0, 1.0),
+                                backgroundColor: const Color(0xFF262B35),
+                                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                                minHeight: 7,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${(item.percentage * 100).toStringAsFixed(1)}% spent',
+                                  style: const TextStyle(color: Colors.grey, fontSize: 10),
+                                ),
+                                const Text(
+                                  'Tap to customize limit',
+                                  style: TextStyle(color: AppColors.income, fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${(item.percentage * 100).toStringAsFixed(1)}% of budget limit spent',
-                        style: const TextStyle(color: Colors.grey, fontSize: 10),
-                      ),
-                    ],
+                    ),
                   ),
                 );
               }),

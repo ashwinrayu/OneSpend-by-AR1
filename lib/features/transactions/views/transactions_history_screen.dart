@@ -2,15 +2,20 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/export_service.dart';
+import '../../../core/services/pdf_statement_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../models/category_item.dart';
 import '../../../models/enums.dart';
 import '../../../models/transaction_item.dart';
 import '../../../providers/navigation_provider.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../settings/providers/preferences_provider.dart';
 import '../providers/history_providers.dart';
 import '../providers/transaction_providers.dart';
 import '../widgets/add_transaction_sheet_or_dialog.dart';
@@ -93,6 +98,35 @@ class _TransactionsHistoryScreenState
           backgroundColor: AppColors.expense,
         ),
       );
+    }
+  }
+
+  Future<void> _exportPdfStatement(List<TransactionItem> list) async {
+    if (list.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No transactions to export in statement.')),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Generating PDF Statement...')),
+    );
+    final now = DateTime.now();
+    final res = await PdfStatementService.generateMonthlyStatement(
+      monthName: DateFormat('MMMM').format(now),
+      year: now.year,
+      currencySymbol: ref.read(currencyProvider),
+      transactions: list,
+      userEmail: ref.read(currentUserProvider)?.email,
+    );
+    if (res.success && res.filePath != null) {
+      await OpenFilex.open(res.filePath!);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.message)),
+        );
+      }
     }
   }
 
@@ -202,12 +236,61 @@ class _TransactionsHistoryScreenState
             : null,
         title: const Text('Transaction History'),
         actions: [
-          // CSV Export Button
+          // Export Menu Button (CSV + PDF Statement)
           historyAsync.when(
-            data: (list) => FilledButton.tonalIcon(
-              onPressed: () => _exportData(list),
-              icon: const Icon(Icons.download_rounded, size: 18),
-              label: Text(isDesktop ? 'Export CSV' : 'Export'),
+            data: (list) => PopupMenuButton<String>(
+              tooltip: 'Export Transactions',
+              color: const Color(0xFF181B22),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onSelected: (val) {
+                if (val == 'csv') {
+                  _exportData(list);
+                } else if (val == 'pdf') {
+                  _exportPdfStatement(list);
+                }
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                  value: 'pdf',
+                  child: Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf_rounded, color: AppColors.income, size: 18),
+                      SizedBox(width: 8),
+                      Text('PDF Statement', style: TextStyle(color: Colors.white, fontSize: 13)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'csv',
+                  child: Row(
+                    children: [
+                      Icon(Icons.table_chart_rounded, color: Colors.blueAccent, size: 18),
+                      SizedBox(width: 8),
+                      Text('CSV Spreadsheet', style: TextStyle(color: Colors.white, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ],
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.income.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.income.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.download_rounded, color: AppColors.income, size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'Export',
+                      style: TextStyle(color: AppColors.income, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    Icon(Icons.arrow_drop_down, color: AppColors.income, size: 18),
+                  ],
+                ),
+              ),
             ),
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),

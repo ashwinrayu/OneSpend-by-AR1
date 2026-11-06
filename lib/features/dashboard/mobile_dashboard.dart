@@ -1,8 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/pdf_statement_service.dart';
 import '../../core/services/sync_service.dart';
 import '../../core/services/update_service.dart';
 import '../../core/utils/formatters.dart';
@@ -10,9 +13,14 @@ import '../../models/enums.dart';
 import '../../models/transaction_item.dart';
 import '../../providers/navigation_provider.dart';
 import '../auth/providers/auth_provider.dart';
+import '../settings/providers/preferences_provider.dart';
 import '../shell/widgets/sync_status_badge.dart';
 import '../transactions/providers/transaction_providers.dart';
 import '../transactions/widgets/add_transaction_sheet_or_dialog.dart';
+import 'widgets/accounts_overview_card.dart';
+import 'widgets/financial_health_card.dart';
+import 'widgets/smart_bill_splitter_dialog.dart';
+import 'widgets/smart_magic_add_bar.dart';
 
 class MobileDashboard extends ConsumerStatefulWidget {
   const MobileDashboard({super.key});
@@ -72,9 +80,13 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
               children: [
                 // 1. Top Status Bar Header (Avatar, Greeting, Notification)
                 _buildTopHeader(context),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
 
-                // 2. Hero Balance Card
+                // 2. Smart Magic Add Bar (Natural Language Instant Logger)
+                const SmartMagicAddBar(),
+                const SizedBox(height: 10),
+
+                // 3. Hero Balance Card
                 summaryAsync.when(
                   data: (summary) => _buildHeroBalanceCard(context, summary),
                   loading: () => Container(
@@ -91,9 +103,17 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
                     child: Text('Error: $e', style: const TextStyle(color: AppColors.expense)),
                   ),
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 14),
 
-                // 3. Quick Action Row: [Scan], [Add], [Transfer], [Insights]
+                // 4. Safe Daily Spend & Financial Health Score Card
+                const FinancialHealthCard(),
+                const SizedBox(height: 14),
+
+                // 5. Multi-Accounts & Wallets Breakdown
+                const AccountsOverviewCard(),
+                const SizedBox(height: 18),
+
+                // 6. Quick Action Row
                 _buildQuickActionsRow(context),
                 const SizedBox(height: 24),
 
@@ -449,12 +469,13 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _buildActionItem(
-              icon: Icons.qr_code_scanner_rounded,
-              label: 'Scan',
+              icon: Icons.call_split_rounded,
+              label: 'Split Bill',
               borderColor: const Color(0xFF10B981),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Bill scanner ready...')),
+                showDialog(
+                  context: context,
+                  builder: (_) => const SmartBillSplitterDialog(),
                 );
               },
             ),
@@ -463,6 +484,40 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
               label: 'Add',
               borderColor: const Color(0xFF262B35),
               onTap: () => AddTransactionSheetOrDialog.show(context),
+            ),
+            _buildActionItem(
+              icon: Icons.picture_as_pdf_rounded,
+              label: 'Statement',
+              borderColor: const Color(0xFF3B82F6),
+              onTap: () async {
+                final allTxs = ref.read(transactionListProvider).valueOrNull ?? [];
+                if (allTxs.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No transactions to export yet.')),
+                  );
+                  return;
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Generating PDF Statement...')),
+                );
+                final now = DateTime.now();
+                final res = await PdfStatementService.generateMonthlyStatement(
+                  monthName: DateFormat('MMMM').format(now),
+                  year: now.year,
+                  currencySymbol: ref.read(currencyProvider),
+                  transactions: allTxs,
+                  userEmail: ref.read(currentUserProvider)?.email,
+                );
+                if (res.success && res.filePath != null) {
+                  await OpenFilex.open(res.filePath!);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(res.message)),
+                    );
+                  }
+                }
+              },
             ),
             _buildActionItem(
               icon: Icons.savings_rounded,

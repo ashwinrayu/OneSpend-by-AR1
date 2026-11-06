@@ -1,10 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onespend/core/services/export_service.dart';
+import 'package:onespend/core/services/financial_health_service.dart';
+import 'package:onespend/core/services/smart_expense_parser.dart';
+import 'package:onespend/core/utils/formatters.dart';
+import 'package:onespend/features/transactions/providers/transaction_providers.dart';
+import 'package:onespend/models/budget_item.dart';
 import 'package:onespend/models/enums.dart';
 import 'package:onespend/models/subscription_item.dart';
 import 'package:onespend/models/transaction_item.dart';
-import 'package:onespend/core/services/export_service.dart';
-import 'package:onespend/core/utils/formatters.dart';
-import 'package:onespend/features/transactions/providers/transaction_providers.dart';
 
 void main() {
   test('DashboardMonthlySummary calculations test', () {
@@ -134,5 +137,68 @@ void main() {
     expect(restored.amount, subMonthly.amount);
     expect(restored.billingCycle, 'Monthly');
     expect(restored.isActive, true);
+  });
+
+  test('SmartExpenseParser parsing tests', () {
+    final res1 = SmartExpenseParser.parse('350 lunch at subway upi');
+    expect(res1.isValid, true);
+    expect(res1.amount, 350.0);
+    expect(res1.type, TransactionType.expense);
+    expect(res1.category, 'Food & Dining');
+    expect(res1.paymentMethod, PaymentMethod.upi);
+
+    final res2 = SmartExpenseParser.parse('Salary 75000 bank');
+    expect(res2.isValid, true);
+    expect(res2.amount, 75000.0);
+    expect(res2.type, TransactionType.income);
+    expect(res2.paymentMethod, PaymentMethod.bankTransfer);
+
+    final res3 = SmartExpenseParser.parse('uber 450 card');
+    expect(res3.isValid, true);
+    expect(res3.amount, 450.0);
+    expect(res3.category, 'Transport');
+    expect(res3.paymentMethod, PaymentMethod.creditCard);
+  });
+
+  test('FinancialHealthService calculation test', () {
+    const budget = BudgetItem(
+      id: 'b1',
+      monthlyLimit: 30000.0,
+      month: 11,
+      year: 2026,
+    );
+    final txs = [
+      TransactionItem(
+        id: 't1',
+        title: 'Salary',
+        amount: 60000.0,
+        type: TransactionType.income,
+        category: 'Income',
+        paymentMethod: PaymentMethod.bank,
+        timestamp: DateTime.now(),
+      ),
+      TransactionItem(
+        id: 't2',
+        title: 'Rent',
+        amount: 10000.0,
+        type: TransactionType.expense,
+        category: 'Housing',
+        paymentMethod: PaymentMethod.bank,
+        timestamp: DateTime.now(),
+      ),
+    ];
+
+    final metrics = FinancialHealthService.calculate(
+      activeBudget: budget,
+      allTransactions: txs,
+    );
+
+    expect(metrics.monthlyLimit, 30000.0);
+    expect(metrics.spentThisMonth, 10000.0);
+    expect(metrics.incomeThisMonth, 60000.0);
+    expect(metrics.remainingBudget, 20000.0);
+    expect(metrics.safeDailySpend > 0, true);
+    expect(metrics.healthScore > 50, true);
+    expect(metrics.isOverBudget, false);
   });
 }

@@ -34,10 +34,10 @@ app.get('/health', (req, res) => {
 // App Version & In-App Cloud Auto-Updater Endpoint
 app.get('/api/app/version', (req, res) => {
   res.status(200).json({
-    latestVersion: '1.0.2',
-    buildNumber: 3,
+    latestVersion: '1.1.0',
+    buildNumber: 4,
     releaseDate: '2026-11-07',
-    releaseNotes: '• Direct In-App Cloud Auto-Updater\n• Real-time bidirectional Cloud Delta Sync\n• PostgreSQL decimal accuracy fix\n• Obsidian & Emerald theme enhancements',
+    releaseNotes: '• Smart Bill Splitter with Live UPI QR Generator & WhatsApp share\n• "Safe Daily Spend" Calculator & Financial Health Advisor\n• Multi-Account & Wallet Balances (Bank, Cash, Card, UPI)\n• Category-wise Monthly Spending Budgets with visual health bars\n• Executive PDF Monthly Financial Statement export\n• "Smart Magic Add" natural language expense parser\n• Conflict-free permanent signing keystore for cloud auto-updates',
     downloadUrl: 'https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/latest/app-release.apk',
     webAppUrl: 'https://onespend.vercel.app',
     isMandatory: false

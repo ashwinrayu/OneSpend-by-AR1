@@ -106,9 +106,12 @@ class CategoryBudgetProgress {
   bool get isOverLimit => spent > limit;
 }
 
+import 'category_budget_provider.dart';
+
 final categoryBudgetProgressListProvider = Provider<List<CategoryBudgetProgress>>((ref) {
   final txAsync = ref.watch(transactionListProvider);
   final budgetAsync = ref.watch(activeBudgetProvider);
+  final customLimits = ref.watch(categoryBudgetsProvider);
 
   final totalMonthlyBudget = budgetAsync.when(
     data: (b) => b.monthlyLimit,
@@ -129,29 +132,41 @@ final categoryBudgetProgressListProvider = Provider<List<CategoryBudgetProgress>
         categorySpent[tx.category] = (categorySpent[tx.category] ?? 0.0) + tx.amount;
       }
 
-      // Default category distribution weights of total budget
-      final Map<String, double> categoryWeight = {
-        'Food': 0.35,
-        'Shopping': 0.25,
-        'Bills': 0.20,
-        'Transport': 0.12,
-        'Entertainment': 0.08,
+      // Default category distribution weights if not customized
+      final Map<String, double> defaultWeights = {
+        'Food & Dining': 0.35,
+        'Shopping': 0.20,
+        'Bills & Utilities': 0.20,
+        'Transport': 0.15,
+        'Entertainment': 0.10,
       };
 
+      final allCategories = {...defaultWeights.keys, ...customLimits.keys, ...categorySpent.keys};
       final List<CategoryBudgetProgress> result = [];
-      categoryWeight.forEach((cat, weight) {
+
+      for (final cat in allCategories) {
         final spent = categorySpent[cat] ?? 0.0;
-        final limit = totalMonthlyBudget * weight;
-        final percentage = limit > 0 ? (spent / limit).clamp(0.0, 2.0) : 0.0;
+        final double limit;
+        if (customLimits.containsKey(cat)) {
+          limit = customLimits[cat]!;
+        } else {
+          final weight = defaultWeights[cat] ?? 0.10;
+          limit = totalMonthlyBudget * weight;
+        }
 
-        result.add(CategoryBudgetProgress(
-          category: cat,
-          spent: spent,
-          limit: limit,
-          percentage: percentage,
-        ));
-      });
+        if (limit > 0 || spent > 0) {
+          final percentage = limit > 0 ? (spent / limit) : 1.0;
+          result.add(CategoryBudgetProgress(
+            category: cat,
+            spent: spent,
+            limit: limit,
+            percentage: percentage,
+          ));
+        }
+      }
 
+      // Sort: highest spent first
+      result.sort((a, b) => b.spent.compareTo(a.spent));
       return result;
     },
     loading: () => [],
