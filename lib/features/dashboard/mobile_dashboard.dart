@@ -506,7 +506,7 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
                   year: now.year,
                   currencySymbol: ref.read(currencyProvider),
                   transactions: allTxs,
-                  userEmail: ref.read(currentUserProvider)?.email,
+                  userEmail: ref.read(authControllerProvider).user?['email'] as String?,
                 );
                 if (res.success && res.filePath != null) {
                   await OpenFilex.open(res.filePath!);

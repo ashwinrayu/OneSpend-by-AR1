@@ -117,7 +117,7 @@ class _TransactionsHistoryScreenState
       year: now.year,
       currencySymbol: ref.read(currencyProvider),
       transactions: list,
-      userEmail: ref.read(currentUserProvider)?.email,
+      userEmail: ref.read(authControllerProvider).user?['email'] as String?,
     );
     if (res.success && res.filePath != null) {
       await OpenFilex.open(res.filePath!);

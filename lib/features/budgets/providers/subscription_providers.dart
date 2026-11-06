@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/repositories/expense_repository.dart';
 import '../../../models/subscription_item.dart';
 import '../../transactions/providers/transaction_providers.dart';
+import 'category_budget_provider.dart';
 
 class SubscriptionsNotifier extends StateNotifier<AsyncValue<List<SubscriptionItem>>> {
   final Ref ref;
@@ -105,8 +106,6 @@ class CategoryBudgetProgress {
 
   bool get isOverLimit => spent > limit;
 }
-
-import 'category_budget_provider.dart';
 
 final categoryBudgetProgressListProvider = Provider<List<CategoryBudgetProgress>>((ref) {
   final txAsync = ref.watch(transactionListProvider);
