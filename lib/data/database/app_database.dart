@@ -44,7 +44,7 @@ class AppDatabase {
 
     return await openDatabase(
       dbPath,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -98,68 +98,17 @@ class AppDatabase {
       )
     ''');
 
-    // Seed default categories
+    // Seed default categories for selection
     final batch = db.batch();
     for (final cat in MockData.defaultCategories) {
       batch.insert('categories', cat.toMap());
     }
 
-    // Seed default budget
+    // Seed default budget target
     batch.insert('budgets', MockData.defaultBudget.toMap());
 
-    // Seed sample transactions
-    for (final tx in MockData.getSampleTransactions()) {
-      batch.insert('transactions', tx.toMap());
-    }
-
-    // Seed sample subscriptions
-    final now = DateTime.now();
-    final sampleSubs = [
-      {
-        'id': 'sub_1',
-        'name': 'Netflix Premium 4K',
-        'amount': 649.0,
-        'billingCycle': 'Monthly',
-        'category': 'Entertainment',
-        'nextBillingDate': now.add(const Duration(days: 4)).millisecondsSinceEpoch,
-        'paymentMethod': 'UPI',
-        'isActive': 1,
-      },
-      {
-        'id': 'sub_2',
-        'name': 'Spotify Duo',
-        'amount': 199.0,
-        'billingCycle': 'Monthly',
-        'category': 'Entertainment',
-        'nextBillingDate': now.add(const Duration(days: 12)).millisecondsSinceEpoch,
-        'paymentMethod': 'Card',
-        'isActive': 1,
-      },
-      {
-        'id': 'sub_3',
-        'name': 'Fiber Broadband (Airtel)',
-        'amount': 1199.0,
-        'billingCycle': 'Monthly',
-        'category': 'Bills',
-        'nextBillingDate': now.add(const Duration(days: 7)).millisecondsSinceEpoch,
-        'paymentMethod': 'UPI',
-        'isActive': 1,
-      },
-      {
-        'id': 'sub_4',
-        'name': 'Gym & Fitness Pass',
-        'amount': 2200.0,
-        'billingCycle': 'Monthly',
-        'category': 'Other',
-        'nextBillingDate': now.add(const Duration(days: 18)).millisecondsSinceEpoch,
-        'paymentMethod': 'UPI',
-        'isActive': 1,
-      },
-    ];
-    for (final sub in sampleSubs) {
-      batch.insert('subscriptions', sub);
-    }
-
+    // NOTE: Production build starts with a pristine, 100% clean vault
+    // (zero dummy transactions or subscriptions seeded)
     await batch.commit(noResult: true);
   }
 
@@ -186,45 +135,13 @@ class AppDatabase {
             isActive INTEGER NOT NULL DEFAULT 1
           )
         ''');
-
-        final now = DateTime.now();
-        final sampleSubs = [
-          {
-            'id': 'sub_1',
-            'name': 'Netflix Premium 4K',
-            'amount': 649.0,
-            'billingCycle': 'Monthly',
-            'category': 'Entertainment',
-            'nextBillingDate': now.add(const Duration(days: 4)).millisecondsSinceEpoch,
-            'paymentMethod': 'UPI',
-            'isActive': 1,
-          },
-          {
-            'id': 'sub_2',
-            'name': 'Spotify Duo',
-            'amount': 199.0,
-            'billingCycle': 'Monthly',
-            'category': 'Entertainment',
-            'nextBillingDate': now.add(const Duration(days: 12)).millisecondsSinceEpoch,
-            'paymentMethod': 'Card',
-            'isActive': 1,
-          },
-          {
-            'id': 'sub_3',
-            'name': 'Fiber Broadband (Airtel)',
-            'amount': 1199.0,
-            'billingCycle': 'Monthly',
-            'category': 'Bills',
-            'nextBillingDate': now.add(const Duration(days: 7)).millisecondsSinceEpoch,
-            'paymentMethod': 'UPI',
-            'isActive': 1,
-          },
-        ];
-        final batch = db.batch();
-        for (final sub in sampleSubs) {
-          batch.insert('subscriptions', sub, conflictAlgorithm: ConflictAlgorithm.ignore);
-        }
-        await batch.commit(noResult: true);
+      } catch (_) {}
+    }
+    if (oldVersion < 4) {
+      try {
+        // Clean legacy mock/sample transactions and subscriptions for pristine production state
+        await db.delete('transactions', where: "id LIKE 'tx_%'");
+        await db.delete('subscriptions', where: "id LIKE 'sub_%'");
       } catch (_) {}
     }
   }

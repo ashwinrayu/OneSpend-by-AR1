@@ -1,0 +1,10 @@
+build_release/
+build/
+android/
+ios/
+windows/
+macos/
+linux/
+.git/
+.github/
+.dart_tool/

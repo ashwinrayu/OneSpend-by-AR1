@@ -199,6 +199,7 @@ class BackupService {
     final db = await AppDatabase.instance.database;
     await db.transaction((txn) async {
       await txn.delete('transactions');
+      await txn.delete('subscriptions');
       await txn.delete('categories');
       await txn.delete('budgets');
 
