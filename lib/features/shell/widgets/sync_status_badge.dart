@@ -127,6 +127,14 @@ class _SyncStatusBadgeState extends ConsumerState<SyncStatusBadge>
               );
             } else {
               ref.read(syncServiceProvider.notifier).syncNow();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Synchronizing vault with Render Cloud...'),
+                  duration: Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Color(0xFF1E222B),
+                ),
+              );
             }
           },
           child: AnimatedContainer(

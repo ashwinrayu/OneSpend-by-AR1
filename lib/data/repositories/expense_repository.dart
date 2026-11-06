@@ -137,14 +137,20 @@ class ExpenseRepository {
 
     for (final change in serverChanges) {
       final map = change as Map<String, dynamic>;
-      final id = map['id'] as String;
-      final isDeleted = (map['is_deleted'] as bool?) ?? false;
+      final id = map['id'].toString();
+      final isDeleted = (map['is_deleted'] == true || map['is_deleted'] == 1);
 
       if (isDeleted) {
         batch.delete('transactions', where: 'id = ?', whereArgs: [id]);
       } else {
-        final timestampStr = map['timestamp'] as String;
-        final timestampMs = DateTime.parse(timestampStr).millisecondsSinceEpoch;
+        final timestampVal = map['timestamp'];
+        int timestampMs;
+        if (timestampVal is int) {
+          timestampMs = timestampVal;
+        } else {
+          timestampMs = DateTime.tryParse(timestampVal?.toString() ?? '')?.millisecondsSinceEpoch ??
+              DateTime.now().millisecondsSinceEpoch;
+        }
 
         final rawAmount = map['amount'];
         final double amount = (rawAmount is num)
@@ -153,13 +159,13 @@ class ExpenseRepository {
 
         final localMap = {
           'id': id,
-          'title': map['title'] as String,
+          'title': (map['title'] ?? 'Expense').toString(),
           'amount': amount,
-          'type': (map['type'] as String).toLowerCase(),
-          'category': map['category'] as String,
-          'paymentMethod': (map['payment_method'] as String?) ?? 'UPI',
+          'type': (map['type'] ?? 'expense').toString().toLowerCase(),
+          'category': (map['category'] ?? 'Other').toString(),
+          'paymentMethod': (map['payment_method'] ?? 'UPI').toString(),
           'timestamp': timestampMs,
-          'notes': map['notes'] as String?,
+          'notes': map['notes']?.toString(),
           'sync_status': 'synced',
           'is_deleted': 0,
         };
