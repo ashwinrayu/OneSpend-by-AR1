@@ -23,6 +23,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Verify Signing Keystore
+        run: |
+          keytool -list -keystore android/app/onespend.keystore -storepass onespend123
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:

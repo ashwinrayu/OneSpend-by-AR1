@@ -316,3 +316,4 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
     );
   }
 }
+
