@@ -137,38 +137,56 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
       children: [
         Row(
           children: [
-            // Profile Avatar
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.mobileCardBorder, width: 2),
-                color: const Color(0xFF232733),
+            // Profile Avatar & Greeting
+            InkWell(
+              onTap: () {
+                if (auth.isGuest) {
+                  ref.read(authControllerProvider.notifier).logout();
+                } else {
+                  ref.read(navigationIndexProvider.notifier).state = 4; // Settings
+                }
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.mobileCardBorder, width: 2),
+                      color: const Color(0xFF232733),
+                    ),
+                    child: Icon(
+                      auth.isGuest ? Icons.person_outline_rounded : Icons.person_rounded,
+                      color: Colors.white70,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hello, $userName',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        auth.isGuest ? 'Guest Mode (Tap to Sign In)' : 'OneSpend by AR1',
+                        style: TextStyle(
+                          color: auth.isGuest ? AppColors.warning : AppColors.income,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              child: const Icon(Icons.person_rounded, color: Colors.white70, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hello, $userName',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Text(
-                  'OneSpend by AR1',
-                  style: TextStyle(
-                    color: AppColors.income,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -176,6 +194,37 @@ class _MobileDashboardState extends ConsumerState<MobileDashboard> {
         // Actions: Cloud Sync Badge & Notifications
         Row(
           children: [
+            if (auth.isGuest)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: () => ref.read(authControllerProvider.notifier).logout(),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.income.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.income.withOpacity(0.4)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.login_rounded, color: AppColors.income, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'Sign In',
+                          style: TextStyle(
+                            color: AppColors.income,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             const SyncStatusBadge(compact: true),
             const SizedBox(width: 8),
             Container(

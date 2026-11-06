@@ -717,9 +717,12 @@
             <div style="font-size: 9px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">by AR1 Studios</div>
           </div>
         </div>
-        <div class="sync-status" style="margin: 0; padding: 4px 8px;">
-          <div class="sync-dot"></div>
-          <span style="font-size: 11px;">Live</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div id="mobileAuthHeaderArea"></div>
+          <div class="sync-status" style="margin: 0; padding: 4px 8px;">
+            <div class="sync-dot"></div>
+            <span style="font-size: 11px;">Live</span>
+          </div>
         </div>
       </div>
 
@@ -729,6 +732,7 @@
           <input type="text" id="globalSearch" placeholder="Search transactions, notes, payees..." oninput="handleSearch()">
         </div>
         <div class="header-actions">
+          <div id="authHeaderArea"></div>
           <div class="sync-status">
             <div class="sync-dot"></div>
             <span id="syncText">Render Live Cloud: Synced</span>
@@ -1004,6 +1008,68 @@
 
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- MODAL: SIGN IN / REGISTER -->
+  <div class="modal-backdrop" id="authModal">
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-header">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" id="authTabLogin" class="btn btn-primary" onclick="switchAuthTab('login')" style="padding: 6px 14px; font-size: 12px; font-weight: 700;">
+            Sign In
+          </button>
+          <button type="button" id="authTabRegister" class="btn btn-secondary" onclick="switchAuthTab('register')" style="padding: 6px 14px; font-size: 12px; font-weight: 600;">
+            Create Account
+          </button>
+        </div>
+        <button class="modal-close" onclick="closeAuthModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- LOGIN FORM -->
+        <form id="loginForm" onsubmit="handleWebLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="loginEmail" class="form-control" required placeholder="you@example.com">
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label class="form-label">Password</label>
+            <input type="password" id="loginPassword" class="form-control" required placeholder="••••••••">
+          </div>
+          <div style="margin-top: 20px;">
+            <button type="submit" id="loginSubmitBtn" class="btn btn-primary" style="width: 100%; justify-content: center; font-size: 14px; padding: 12px;">
+              <i class="fa-solid fa-right-to-bracket"></i> Sign In to Cloud
+            </button>
+          </div>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="registerForm" onsubmit="handleWebRegister(event)" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="regFullName" class="form-control" required placeholder="Ashwin Rayu">
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="regEmail" class="form-control" required placeholder="you@example.com">
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label class="form-label">Password (Min. 6 characters)</label>
+            <input type="password" id="regPassword" class="form-control" required minlength="6" placeholder="••••••••">
+          </div>
+          <div style="margin-top: 20px;">
+            <button type="submit" id="regSubmitBtn" class="btn btn-primary" style="width: 100%; justify-content: center; font-size: 14px; padding: 12px;">
+              <i class="fa-solid fa-user-plus"></i> Create Account
+            </button>
+          </div>
+        </form>
+
+        <div style="text-align: center; margin-top: 18px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+          <button type="button" class="btn btn-secondary" onclick="continueWebGuest()" style="width: 100%; justify-content: center; font-size: 12px;">
+            <i class="fa-solid fa-shield-halved"></i> Continue Offline (Guest Mode)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL: ADD / EDIT TRANSACTION -->
   <div class="modal-backdrop" id="txModal">
@@ -1598,6 +1664,158 @@
       }
     }
 
+    // Auth System
+    const STORAGE_KEY_TOKEN = 'onespend_auth_token';
+    const STORAGE_KEY_USER = 'onespend_auth_user';
+
+    function renderAuthStatus() {
+      const token = localStorage.getItem(STORAGE_KEY_TOKEN);
+      const userJson = localStorage.getItem(STORAGE_KEY_USER);
+      let user = null;
+      try { if (userJson) user = JSON.parse(userJson); } catch (_) {}
+
+      const desktopContainer = document.getElementById('authHeaderArea');
+      const mobileContainer = document.getElementById('mobileAuthHeaderArea');
+
+      if (token && user) {
+        const name = user.full_name || user.email.split('@')[0];
+        const html = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; font-weight: 600; color: var(--primary); display: inline-flex; align-items: center; gap: 5px;">
+              <i class="fa-solid fa-circle-user"></i> ${escapeHtml(name)}
+            </span>
+            <button class="btn btn-secondary" onclick="logoutWeb()" style="padding: 4px 10px; font-size: 11px;">
+              Sign Out
+            </button>
+          </div>
+        `;
+        if (desktopContainer) desktopContainer.innerHTML = html;
+        if (mobileContainer) mobileContainer.innerHTML = `
+          <button class="btn btn-secondary" onclick="logoutWeb()" style="padding: 3px 8px; font-size: 10px;">
+            Sign Out
+          </button>
+        `;
+      } else {
+        const loginBtnHtml = `
+          <button class="btn btn-primary" onclick="openAuthModal()" style="padding: 6px 14px; font-size: 12px;">
+            <i class="fa-solid fa-user-circle"></i> Sign In
+          </button>
+        `;
+        if (desktopContainer) desktopContainer.innerHTML = loginBtnHtml;
+        if (mobileContainer) mobileContainer.innerHTML = `
+          <button class="btn btn-primary" onclick="openAuthModal()" style="padding: 3px 10px; font-size: 11px;">
+            Sign In
+          </button>
+        `;
+      }
+    }
+
+    function openAuthModal() {
+      document.getElementById('authModal').classList.add('open');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.remove('open');
+    }
+
+    function switchAuthTab(tab) {
+      const loginTab = document.getElementById('authTabLogin');
+      const regTab = document.getElementById('authTabRegister');
+      const loginForm = document.getElementById('loginForm');
+      const regForm = document.getElementById('registerForm');
+
+      if (tab === 'login') {
+        loginTab.className = 'btn btn-primary';
+        regTab.className = 'btn btn-secondary';
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+      } else {
+        loginTab.className = 'btn btn-secondary';
+        regTab.className = 'btn btn-primary';
+        loginForm.style.display = 'none';
+        regForm.style.display = 'block';
+      }
+    }
+
+    function continueWebGuest() {
+      closeAuthModal();
+      showToast('Continuing in Guest Mode with local storage.', 'info');
+    }
+
+    async function handleWebLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginSubmitBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
+
+      try {
+        const res = await fetch('https://onespend-by-ar1.onrender.com/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem(STORAGE_KEY_TOKEN, data.token);
+          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(data.user));
+          closeAuthModal();
+          renderAuthStatus();
+          showToast(`Welcome back, ${data.user.full_name || data.user.email}!`, 'success');
+        } else {
+          showToast(data.error || 'Login failed. Please check your credentials.', 'error');
+        }
+      } catch (err) {
+        showToast('Server connection failed: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Sign In to Cloud';
+      }
+    }
+
+    async function handleWebRegister(e) {
+      e.preventDefault();
+      const full_name = document.getElementById('regFullName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const btn = document.getElementById('regSubmitBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account...';
+
+      try {
+        const res = await fetch('https://onespend-by-ar1.onrender.com/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name, email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem(STORAGE_KEY_TOKEN, data.token);
+          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(data.user));
+          closeAuthModal();
+          renderAuthStatus();
+          showToast(`Account created! Welcome, ${data.user.full_name || data.user.email}!`, 'success');
+        } else {
+          showToast(data.error || 'Registration failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Server connection failed: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account';
+      }
+    }
+
+    function logoutWeb() {
+      localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_USER);
+      renderAuthStatus();
+      showToast('Signed out successfully. Running in offline Guest Mode.', 'info');
+    }
+
     function escapeHtml(str) {
       if (!str) return '';
       return String(str)
@@ -1611,6 +1829,7 @@
     // Initialize UI on page load
     window.addEventListener('DOMContentLoaded', () => {
       renderAll();
+      renderAuthStatus();
     });
   </script>
 </body>
