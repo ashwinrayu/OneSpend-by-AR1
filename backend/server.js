@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import loanRoutes from './routes/loanRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import { initDb } from './config/db.js';
 
 dotenv.config();
@@ -35,11 +36,11 @@ app.get('/health', (req, res) => {
 // App Version & In-App Cloud Auto-Updater Endpoint
 app.get('/api/app/version', (req, res) => {
   res.status(200).json({
-    latestVersion: '1.2.2',
-    buildNumber: 8,
+    latestVersion: '1.2.3',
+    buildNumber: 9,
     releaseDate: '2026-11-08',
-    releaseNotes: '• 🔄 Instant Cloud Sync: Adding, updating, deleting loans or paying EMIs in the mobile APK now triggers immediate cloud sync to web\n• 🛡️ Safe Numeric Parsing: Resolved PostgreSQL NUMERIC string casting issues\n• 📱 Mobile Web Responsiveness: Added mobile bottom-sheet modals, touch scroll tables, and Loans tab with quick action badge',
-    downloadUrl: 'https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.2/app-release.apk',
+    releaseNotes: '• 🔄 Full Live Sync for Subscriptions: Subscriptions and recurring bills now sync seamlessly in real-time between Android APK and Web\n• ⚡ Immediate Auto-Sync: Adding, updating, deleting or paying subscriptions triggers instant background cloud synchronization\n• 🗄️ PostgreSQL Cloud Schema: Dedicated subscriptions table with delta-sync and conflict resolution',
+    downloadUrl: 'https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.3/app-release.apk',
     webAppUrl: 'https://onespend.vercel.app',
     isMandatory: false
   });
@@ -49,6 +50,7 @@ app.get('/api/app/version', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/loans', loanRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 // Root Welcome Endpoint
 app.get('/', (req, res) => {

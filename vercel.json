@@ -8,21 +8,21 @@
       "src": "/download",
       "status": 302,
       "headers": {
-        "Location": "https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.2/app-release.apk"
+        "Location": "https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.3/app-release.apk"
       }
     },
     {
       "src": "/app-release.apk",
       "status": 302,
       "headers": {
-        "Location": "https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.2/app-release.apk"
+        "Location": "https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.3/app-release.apk"
       }
     },
     {
       "src": "/latest-apk",
       "status": 302,
       "headers": {
-        "Location": "https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.2/app-release.apk"
+        "Location": "https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.3/app-release.apk"
       }
     },
     {

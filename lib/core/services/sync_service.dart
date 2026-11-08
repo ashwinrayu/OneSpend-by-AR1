@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/repositories/expense_repository.dart';
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/budgets/providers/subscription_providers.dart';
 import '../../features/loans/providers/loan_providers.dart';
 import '../../features/transactions/providers/transaction_providers.dart';
 import 'api_client.dart';
@@ -56,6 +57,7 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
 
   static const String _lastSyncedKey = 'onespend_last_synced_at';
   static const String _lastLoanSyncedKey = 'onespend_last_loan_synced_at';
+  static const String _lastSubSyncedKey = 'onespend_last_subscription_synced_at';
 
   Future<void> _init() async {
     // Load last sync timestamp from preferences
@@ -234,6 +236,50 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
       } catch (loanErr) {
         // Non-blocking for transactions sync
         debugPrint('Loan cloud sync notice: $loanErr');
+      }
+
+      // 10. Sync Subscriptions with Render Cloud
+      try {
+        final pendingSubs = await repo.getPendingSyncSubscriptions();
+        final clientSubChanges = pendingSubs.map((s) {
+          return {
+            'id': s.id,
+            'name': s.name,
+            'amount': s.amount,
+            'billingCycle': s.billingCycle,
+            'category': s.category,
+            'nextBillingDate': s.nextBillingDate.toIso8601String(),
+            'paymentMethod': s.paymentMethod,
+            'isActive': s.isActive,
+            'isDeleted': s.isDeleted,
+          };
+        }).toList();
+
+        final lastSubSyncedAt = prefs.getString(_lastSubSyncedKey);
+        final subResponse = await api.syncSubscriptions(
+          token: auth.token!,
+          clientChanges: clientSubChanges,
+          lastSyncedAt: lastSubSyncedAt,
+        );
+
+        final serverSubChanges = (subResponse['serverChanges'] as List<dynamic>?) ?? [];
+        if (serverSubChanges.isNotEmpty) {
+          await repo.mergeServerSubscriptions(serverSubChanges);
+          ref.read(subscriptionsProvider.notifier).fetchSubscriptions();
+        }
+
+        if (pendingSubs.isNotEmpty) {
+          final pendingSubIds = pendingSubs.map((s) => s.id).toList();
+          await repo.markSubscriptionsAsSynced(pendingSubIds);
+        }
+
+        final subSyncedAtStr = subResponse['syncedAt'] as String?;
+        if (subSyncedAtStr != null) {
+          await prefs.setString(_lastSubSyncedKey, subSyncedAtStr);
+        }
+      } catch (subErr) {
+        // Non-blocking for primary sync
+        debugPrint('Subscription cloud sync notice: $subErr');
       }
 
       state = SyncStatus(

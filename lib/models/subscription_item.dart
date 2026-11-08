@@ -7,6 +7,8 @@ class SubscriptionItem {
   final DateTime nextBillingDate;
   final String paymentMethod;
   final bool isActive;
+  final String syncStatus; // 'synced', 'pending'
+  final bool isDeleted;
 
   const SubscriptionItem({
     required this.id,
@@ -17,6 +19,8 @@ class SubscriptionItem {
     required this.nextBillingDate,
     this.paymentMethod = 'UPI',
     this.isActive = true,
+    this.syncStatus = 'synced',
+    this.isDeleted = false,
   });
 
   int get daysRemaining {
@@ -59,6 +63,8 @@ class SubscriptionItem {
       'nextBillingDate': nextBillingDate.millisecondsSinceEpoch,
       'paymentMethod': paymentMethod,
       'isActive': isActive ? 1 : 0,
+      'sync_status': syncStatus,
+      'is_deleted': isDeleted ? 1 : 0,
     };
   }
 
@@ -74,6 +80,8 @@ class SubscriptionItem {
       ),
       paymentMethod: (map['paymentMethod'] as String?) ?? 'UPI',
       isActive: (map['isActive'] as int?) == 1,
+      syncStatus: (map['sync_status'] as String?) ?? 'synced',
+      isDeleted: (map['is_deleted'] as int?) == 1,
     );
   }
 
@@ -86,6 +94,8 @@ class SubscriptionItem {
     DateTime? nextBillingDate,
     String? paymentMethod,
     bool? isActive,
+    String? syncStatus,
+    bool? isDeleted,
   }) {
     return SubscriptionItem(
       id: id ?? this.id,
@@ -96,7 +106,8 @@ class SubscriptionItem {
       nextBillingDate: nextBillingDate ?? this.nextBillingDate,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       isActive: isActive ?? this.isActive,
+      syncStatus: syncStatus ?? this.syncStatus,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 }
-

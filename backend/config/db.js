@@ -97,6 +97,24 @@ export const initDb = async () => {
 
         CREATE INDEX IF NOT EXISTS idx_loans_user ON loans(user_id);
         CREATE INDEX IF NOT EXISTS idx_loans_updated ON loans(user_id, updated_at DESC);
+
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            id VARCHAR(100) PRIMARY KEY,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name VARCHAR(255) NOT NULL,
+            amount NUMERIC(12, 2) NOT NULL,
+            billing_cycle VARCHAR(50) NOT NULL DEFAULT 'Monthly',
+            category VARCHAR(100) NOT NULL DEFAULT 'Bills',
+            next_billing_date TIMESTAMPTZ NOT NULL,
+            payment_method VARCHAR(50) NOT NULL DEFAULT 'UPI',
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+        CREATE INDEX IF NOT EXISTS idx_subscriptions_updated ON subscriptions(user_id, updated_at DESC);
       `);
       console.log('✅ PostgreSQL database schema verified and initialized.');
     } finally {

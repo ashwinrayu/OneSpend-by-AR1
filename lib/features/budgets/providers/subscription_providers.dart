@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/sync_service.dart';
 import '../../../data/repositories/expense_repository.dart';
 import '../../../models/subscription_item.dart';
 import '../../transactions/providers/transaction_providers.dart';
@@ -12,6 +13,12 @@ class SubscriptionsNotifier extends StateNotifier<AsyncValue<List<SubscriptionIt
   }
 
   ExpenseRepository get _repo => ref.read(expenseRepositoryProvider);
+
+  void _triggerBackgroundSync() {
+    try {
+      ref.read(syncServiceProvider.notifier).syncNow();
+    } catch (_) {}
+  }
 
   Future<void> fetchSubscriptions() async {
     try {
@@ -27,6 +34,7 @@ class SubscriptionsNotifier extends StateNotifier<AsyncValue<List<SubscriptionIt
     try {
       await _repo.insertSubscription(sub);
       await fetchSubscriptions();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -36,6 +44,7 @@ class SubscriptionsNotifier extends StateNotifier<AsyncValue<List<SubscriptionIt
     try {
       await _repo.updateSubscription(sub);
       await fetchSubscriptions();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -45,6 +54,7 @@ class SubscriptionsNotifier extends StateNotifier<AsyncValue<List<SubscriptionIt
     try {
       await _repo.deleteSubscription(id);
       await fetchSubscriptions();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -62,6 +72,7 @@ class SubscriptionsNotifier extends StateNotifier<AsyncValue<List<SubscriptionIt
       // Refresh transactions so the newly paid bill appears immediately in the history!
       await ref.read(transactionListProvider.notifier).fetchTransactions();
       ref.invalidate(monthlySummaryProvider);
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

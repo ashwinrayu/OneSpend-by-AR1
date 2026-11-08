@@ -44,7 +44,7 @@ class AppDatabase {
 
     return await openDatabase(
       dbPath,
-      version: 6,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -94,7 +94,9 @@ class AppDatabase {
         category TEXT NOT NULL,
         nextBillingDate INTEGER NOT NULL,
         paymentMethod TEXT NOT NULL,
-        isActive INTEGER NOT NULL DEFAULT 1
+        isActive INTEGER NOT NULL DEFAULT 1,
+        sync_status TEXT NOT NULL DEFAULT 'synced',
+        is_deleted INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -207,6 +209,14 @@ class AppDatabase {
       } catch (_) {}
       try {
         await db.execute("ALTER TABLE loans ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
+      } catch (_) {}
+    }
+    if (oldVersion < 7) {
+      try {
+        await db.execute("ALTER TABLE subscriptions ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'synced'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE subscriptions ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
       } catch (_) {}
     }
   }

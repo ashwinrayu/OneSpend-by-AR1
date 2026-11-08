@@ -260,6 +260,7 @@ class ExpenseRepository {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
       'subscriptions',
+      where: 'is_deleted = 0',
       orderBy: 'nextBillingDate ASC',
     );
     return maps.map((map) => SubscriptionItem.fromMap(map)).toList();
@@ -267,18 +268,23 @@ class ExpenseRepository {
 
   Future<void> insertSubscription(SubscriptionItem sub) async {
     final db = await _db;
+    final map = sub.toMap();
+    map['sync_status'] = 'pending';
+    map['is_deleted'] = 0;
     await db.insert(
       'subscriptions',
-      sub.toMap(),
+      map,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
   Future<void> updateSubscription(SubscriptionItem sub) async {
     final db = await _db;
+    final map = sub.toMap();
+    map['sync_status'] = 'pending';
     await db.update(
       'subscriptions',
-      sub.toMap(),
+      map,
       where: 'id = ?',
       whereArgs: [sub.id],
     );
@@ -286,11 +292,86 @@ class ExpenseRepository {
 
   Future<void> deleteSubscription(String id) async {
     final db = await _db;
-    await db.delete(
+    await db.update(
       'subscriptions',
+      {'is_deleted': 1, 'sync_status': 'pending'},
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<List<SubscriptionItem>> getPendingSyncSubscriptions() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'subscriptions',
+      where: "sync_status = 'pending'",
+    );
+    return maps.map((map) => SubscriptionItem.fromMap(map)).toList();
+  }
+
+  Future<void> markSubscriptionsAsSynced(List<String> ids) async {
+    if (ids.isEmpty) return;
+    final db = await _db;
+    final batch = db.batch();
+    for (final id in ids) {
+      batch.update(
+        'subscriptions',
+        {'sync_status': 'synced'},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
+    // Hard-delete items that were marked is_deleted and are now successfully synced
+    await db.delete(
+      'subscriptions',
+      where: "is_deleted = 1 AND sync_status = 'synced'",
+    );
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> mergeServerSubscriptions(List<dynamic> serverChanges) async {
+    final db = await _db;
+    final batch = db.batch();
+
+    for (final raw in serverChanges) {
+      if (raw is! Map<String, dynamic>) continue;
+
+      final isDeleted = raw['is_deleted'] == true || raw['is_deleted'] == 1;
+      final id = raw['id'] as String;
+
+      if (isDeleted) {
+        batch.delete('subscriptions', where: 'id = ?', whereArgs: [id]);
+      } else {
+        final nextBillingVal = raw['next_billing_date'];
+        DateTime nextBillingDate = DateTime.now();
+        if (nextBillingVal is int) {
+          nextBillingDate = DateTime.fromMillisecondsSinceEpoch(nextBillingVal);
+        } else if (nextBillingVal is String) {
+          nextBillingDate = DateTime.tryParse(nextBillingVal) ?? DateTime.now();
+        }
+
+        final localMap = <String, dynamic>{
+          'id': id,
+          'name': raw['name'] as String? ?? 'Subscription',
+          'amount': _asDouble(raw['amount']),
+          'billingCycle': raw['billing_cycle'] as String? ?? 'Monthly',
+          'category': raw['category'] as String? ?? 'Bills',
+          'nextBillingDate': nextBillingDate.millisecondsSinceEpoch,
+          'paymentMethod': raw['payment_method'] as String? ?? 'UPI',
+          'isActive': (raw['is_active'] == true || raw['is_active'] == 1) ? 1 : 0,
+          'sync_status': 'synced',
+          'is_deleted': 0,
+        };
+
+        batch.insert(
+          'subscriptions',
+          localMap,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    }
+
+    await batch.commit(noResult: true);
   }
 
   Future<void> markSubscriptionPaid(SubscriptionItem sub) async {

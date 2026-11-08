@@ -138,6 +138,8 @@ void main() {
     expect(restored.amount, subMonthly.amount);
     expect(restored.billingCycle, 'Monthly');
     expect(restored.isActive, true);
+    expect(restored.syncStatus, 'synced');
+    expect(restored.isDeleted, false);
   });
 
   test('SmartExpenseParser parsing tests', () {
