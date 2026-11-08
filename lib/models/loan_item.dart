@@ -11,11 +11,13 @@ class LoanItem {
   final int paidEmis; // Number of EMIs paid so far
   final double paidAmount; // Total amount paid so far
   final DateTime startDate;
-  final int dueDay; // Day of the month EMI is due (1-31)
+  final int dueDay; // Day of the month EMI is due (1-28)
   final String category; // Home, Vehicle, Personal, Education, Gadgets, Other
   final String paymentMethod; // Bank, UPI, Auto-Debit, Cash
   final bool isClosed; // Whether loan has been fully paid or closed
   final String? notes;
+  final String interestType; // 'reducing', 'flat', 'no_cost', 'custom'
+  final DateTime? lastPaymentDate;
 
   const LoanItem({
     required this.id,
@@ -33,23 +35,33 @@ class LoanItem {
     this.paymentMethod = 'Bank Transfer',
     this.isClosed = false,
     this.notes,
+    this.interestType = 'reducing',
+    this.lastPaymentDate,
   });
 
-  /// Standard EMI calculation formula
+  /// Flexible EMI calculation formula (Reducing, Flat, No-Cost)
   static double calculateEmi({
     required double principal,
     required double annualInterestRate,
     required int tenureMonths,
+    String interestType = 'reducing',
   }) {
     if (tenureMonths <= 0 || principal <= 0) return 0.0;
-    if (annualInterestRate <= 0.0) {
+    if (annualInterestRate <= 0.0 || interestType == 'no_cost') {
       return principal / tenureMonths;
     }
-    final r = (annualInterestRate / 12) / 100;
-    final numerator = principal * r * pow(1 + r, tenureMonths);
-    final denominator = pow(1 + r, tenureMonths) - 1;
+
+    if (interestType == 'flat') {
+      final totalInterest = principal * (annualInterestRate / 100.0) * (tenureMonths / 12.0);
+      return (principal + totalInterest) / tenureMonths;
+    }
+
+    // Standard reducing balance formula: E = P * r * (1+r)^n / ((1+r)^n - 1)
+    final r = (annualInterestRate / 12.0) / 100.0;
+    final factor = pow(1.0 + r, tenureMonths);
+    final denominator = factor - 1.0;
     if (denominator == 0) return principal / tenureMonths;
-    return numerator / denominator;
+    return (principal * r * factor) / denominator;
   }
 
   /// Total amount payable over the tenure (Principal + Interest)
@@ -76,12 +88,15 @@ class LoanItem {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     
-    // Day can't exceed month length
     int targetDay = dueDay.clamp(1, 28);
     DateTime candidate = DateTime(now.year, now.month, targetDay);
 
-    if (candidate.isBefore(today)) {
-      // Due day already passed this month, advance to next month
+    // If candidate has passed today, OR if the user already paid in the candidate month
+    final paidInCandidateMonth = lastPaymentDate != null &&
+        lastPaymentDate!.year == candidate.year &&
+        lastPaymentDate!.month == candidate.month;
+
+    if (candidate.isBefore(today) || paidInCandidateMonth) {
       final nextMonth = now.month < 12 ? now.month + 1 : 1;
       final nextYear = now.month < 12 ? now.year : now.year + 1;
       candidate = DateTime(nextYear, nextMonth, targetDay);
@@ -99,6 +114,12 @@ class LoanItem {
   /// User-friendly due status
   String get dueStatusString {
     if (isClosed || remainingEmis == 0) return 'Fully Paid 🎉';
+    final now = DateTime.now();
+    if (lastPaymentDate != null &&
+        lastPaymentDate!.year == now.year &&
+        lastPaymentDate!.month == now.month) {
+      return 'Paid this month ✓';
+    }
     final days = daysUntilNextDue;
     if (days == 0) return 'Due Today!';
     if (days == 1) return 'Due Tomorrow';
@@ -122,6 +143,8 @@ class LoanItem {
       'paymentMethod': paymentMethod,
       'isClosed': isClosed ? 1 : 0,
       'notes': notes ?? '',
+      'interestType': interestType,
+      'lastPaymentDate': lastPaymentDate?.millisecondsSinceEpoch,
     };
   }
 
@@ -142,6 +165,10 @@ class LoanItem {
       paymentMethod: (map['paymentMethod'] as String?) ?? 'Bank Transfer',
       isClosed: (map['isClosed'] as int?) == 1,
       notes: map['notes'] as String?,
+      interestType: (map['interestType'] as String?) ?? 'reducing',
+      lastPaymentDate: map['lastPaymentDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['lastPaymentDate'] as int)
+          : null,
     );
   }
 
@@ -161,6 +188,8 @@ class LoanItem {
     String? paymentMethod,
     bool? isClosed,
     String? notes,
+    String? interestType,
+    DateTime? lastPaymentDate,
   }) {
     return LoanItem(
       id: id ?? this.id,
@@ -178,7 +207,8 @@ class LoanItem {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       isClosed: isClosed ?? this.isClosed,
       notes: notes ?? this.notes,
+      interestType: interestType ?? this.interestType,
+      lastPaymentDate: lastPaymentDate ?? this.lastPaymentDate,
     );
   }
 }
-

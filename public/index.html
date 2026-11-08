@@ -1095,7 +1095,7 @@
 
   <!-- MODAL: ADD LOAN / EMI -->
   <div class="modal-backdrop" id="loanModal">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width: 520px;">
       <div class="modal-header">
         <h3 class="modal-title"><i class="fa-solid fa-hand-holding-dollar" style="color: var(--primary); margin-right: 8px;"></i>Add Loan & EMI Plan</h3>
         <button class="modal-close" onclick="closeLoanModal()">&times;</button>
@@ -1103,53 +1103,122 @@
       <form onsubmit="handleLoanSubmit(event)">
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">Loan / Plan Name</label>
-            <input type="text" id="loanName" class="form-control" placeholder="e.g. MacBook Pro M3, Car Loan, Home Loan" required>
+            <label class="form-label">Loan / Plan Name *</label>
+            <input type="text" id="loanName" class="form-control" placeholder="e.g. MacBook Pro, Car Loan, Home Loan" required>
           </div>
           <div class="form-group">
             <label class="form-label">Lender / Financial Institution</label>
-            <input type="text" id="loanLender" class="form-control" placeholder="e.g. HDFC Bank, SBI, Bajaj Finserv" required>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group">
-              <label class="form-label">Principal Amount (₹)</label>
-              <input type="number" id="loanAmount" class="form-control" placeholder="e.g. 60000" step="0.01" required oninput="autoCalcModalEmi()">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Interest Rate (% p.a.)</label>
-              <input type="number" id="loanRate" class="form-control" placeholder="0 for No-Cost EMI" step="0.1" value="0" oninput="autoCalcModalEmi()">
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group">
-              <label class="form-label">Tenure (Months)</label>
-              <input type="number" id="loanTenure" class="form-control" placeholder="e.g. 12" min="1" max="360" value="12" required oninput="autoCalcModalEmi()">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Monthly EMI (₹)</label>
-              <input type="number" id="loanEmi" class="form-control" placeholder="Auto-calculated" step="0.01" required>
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group">
-              <label class="form-label">Due Day of Month (1-28)</label>
-              <input type="number" id="loanDueDay" class="form-control" placeholder="5" min="1" max="28" value="5" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Installments Paid So Far</label>
-              <input type="number" id="loanPaidEmis" class="form-control" placeholder="0" min="0" value="0">
-            </div>
+            <input type="text" id="loanLender" class="form-control" placeholder="e.g. HDFC Bank, SBI, Bajaj Finserv">
           </div>
           <div class="form-group">
-            <label class="form-label">Category</label>
-            <select id="loanCategory" class="form-control">
-              <option value="Gadgets">Gadgets & Electronics</option>
-              <option value="Vehicle">Vehicle / Auto</option>
-              <option value="Housing">Housing / Home</option>
-              <option value="Education">Education</option>
-              <option value="Personal">Personal Loan</option>
-              <option value="Other">Other</option>
-            </select>
+            <label class="form-label">Total Loan Principal Amount (₹) *</label>
+            <input type="number" id="loanAmount" class="form-control" placeholder="e.g. 60000" step="0.01" required oninput="onWebLoanInputChanged()">
+          </div>
+
+          <!-- Calculation Mode Selection -->
+          <div class="form-group">
+            <label class="form-label">Interest & Calculation Mode</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="modeBtnNoCost" class="btn btn-secondary" onclick="setWebLoanMode('no_cost')" style="padding: 5px 10px; font-size: 11px;">
+                0% No-Cost EMI
+              </button>
+              <button type="button" id="modeBtnReducing" class="btn btn-primary" onclick="setWebLoanMode('reducing')" style="padding: 5px 10px; font-size: 11px;">
+                Reducing Rate (% p.a.)
+              </button>
+              <button type="button" id="modeBtnFlat" class="btn btn-secondary" onclick="setWebLoanMode('flat')" style="padding: 5px 10px; font-size: 11px;">
+                Flat Rate (% p.a.)
+              </button>
+              <button type="button" id="modeBtnCustom" class="btn btn-secondary" onclick="setWebLoanMode('custom')" style="padding: 5px 10px; font-size: 11px;">
+                Custom / Direct EMI
+              </button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" id="rateAndTenureRow">
+            <div class="form-group" id="rateFormGroup">
+              <label class="form-label">Interest Rate (% p.a.)</label>
+              <input type="number" id="loanRate" class="form-control" placeholder="e.g. 10.5" step="0.1" value="10.5" oninput="onWebLoanInputChanged()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tenure (Total Months) *</label>
+              <input type="number" id="loanTenure" class="form-control" placeholder="e.g. 12" min="1" max="360" value="12" required oninput="onWebLoanInputChanged()">
+            </div>
+          </div>
+
+          <!-- Monthly EMI Field (Always Editable) -->
+          <div class="form-group" style="background: var(--bg-surface-elevated); padding: 12px; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label class="form-label" style="margin: 0; color: var(--primary); font-weight: 700;">Monthly EMI (₹) *</label>
+              <span id="webEmiModeBadge" style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">Auto-Calculated</span>
+            </div>
+            <input type="number" id="loanEmi" class="form-control" placeholder="0.00" step="0.01" style="font-size: 18px; font-weight: 800; color: var(--primary);" required oninput="onWebEmiDirectlyEdited()">
+            <span style="font-size: 10px; color: var(--text-muted);">You can freely edit or type this amount directly.</span>
+          </div>
+
+          <!-- Repayment Progress -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">EMIs Paid So Far</label>
+              <input type="number" id="loanPaidEmis" class="form-control" placeholder="0" min="0" value="0" oninput="onWebPaidEmisChanged()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total Amount Paid (₹)</label>
+              <input type="number" id="loanPaidAmount" class="form-control" placeholder="0.00" step="0.01" value="0" oninput="onWebPaidAmountChanged()">
+            </div>
+          </div>
+
+          <!-- Real-Time Calculation Preview Card -->
+          <div id="webLoanPreviewCard" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px; font-size: 12px; display: none;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-muted);">Total Amount Payable:</span>
+              <strong id="webPreviewTotalPayable" style="color: var(--text-main);">₹0.00</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-muted);">Total Interest Included:</span>
+              <strong id="webPreviewTotalInterest" style="color: var(--warning);">₹0.00</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-muted);">Already Repaid:</span>
+              <strong id="webPreviewPaid" style="color: var(--primary);">₹0.00</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Remaining Debt:</span>
+              <strong id="webPreviewRemaining" style="color: #F43F5E;">₹0.00</strong>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Due Day of Month</label>
+              <select id="loanDueDay" class="form-control">
+                <option value="1">Every 1st</option>
+                <option value="2">Every 2nd</option>
+                <option value="3">Every 3rd</option>
+                <option value="4">Every 4th</option>
+                <option value="5" selected>Every 5th</option>
+                <option value="6">Every 6th</option>
+                <option value="7">Every 7th</option>
+                <option value="8">Every 8th</option>
+                <option value="9">Every 9th</option>
+                <option value="10">Every 10th</option>
+                <option value="12">Every 12th</option>
+                <option value="15">Every 15th</option>
+                <option value="20">Every 20th</option>
+                <option value="25">Every 25th</option>
+                <option value="28">Every 28th</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select id="loanCategory" class="form-control">
+                <option value="Gadgets / Electronics">Gadgets & Electronics</option>
+                <option value="Vehicle / Car">Vehicle / Auto</option>
+                <option value="Home Loan">Home Loan</option>
+                <option value="Education">Education</option>
+                <option value="Personal" selected>Personal Loan</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -2186,31 +2255,144 @@
     // ==========================================
     // LOANS & EMI PLAN METHODS
     // ==========================================
-    function autoCalcModalEmi() {
+    let webLoanInterestMode = 'reducing'; // 'no_cost', 'reducing', 'flat', 'custom'
+
+    function setWebLoanMode(mode) {
+      webLoanInterestMode = mode;
+      ['NoCost', 'Reducing', 'Flat', 'Custom'].forEach(m => {
+        const btn = document.getElementById('modeBtn' + m);
+        if (btn) {
+          btn.className = (m.toLowerCase() === mode.replace('_', '')) ? 'btn btn-primary' : 'btn btn-secondary';
+        }
+      });
+
+      const rateGroup = document.getElementById('rateFormGroup');
+      const rateInput = document.getElementById('loanRate');
+      if (mode === 'no_cost') {
+        if (rateGroup) rateGroup.style.display = 'none';
+        if (rateInput) rateInput.value = '0';
+      } else {
+        if (rateGroup) rateGroup.style.display = 'block';
+        if (rateInput && (!rateInput.value || parseFloat(rateInput.value) <= 0)) {
+          rateInput.value = '10.5';
+        }
+      }
+
+      const badge = document.getElementById('webEmiModeBadge');
+      if (badge) badge.innerText = mode === 'custom' ? 'Custom Input' : 'Auto-Calculated';
+
+      recalculateWebLoanEmi();
+    }
+
+    function onWebLoanInputChanged() {
+      if (webLoanInterestMode !== 'custom') {
+        recalculateWebLoanEmi();
+      } else {
+        updateWebLoanPreview();
+      }
+    }
+
+    function onWebEmiDirectlyEdited() {
+      if (webLoanInterestMode !== 'custom') {
+        webLoanInterestMode = 'custom';
+        ['NoCost', 'Reducing', 'Flat', 'Custom'].forEach(m => {
+          const btn = document.getElementById('modeBtn' + m);
+          if (btn) btn.className = (m === 'Custom') ? 'btn btn-primary' : 'btn btn-secondary';
+        });
+        const badge = document.getElementById('webEmiModeBadge');
+        if (badge) badge.innerText = 'Custom Input';
+      }
+      updateWebLoanPreview();
+    }
+
+    function onWebPaidEmisChanged() {
+      const emis = parseInt(document.getElementById('loanPaidEmis').value) || 0;
+      const emi = parseFloat(document.getElementById('loanEmi').value) || 0;
+      const paidAmtInput = document.getElementById('loanPaidAmount');
+      if (paidAmtInput && emi > 0) {
+        paidAmtInput.value = (emis * emi).toFixed(0);
+      }
+      updateWebLoanPreview();
+    }
+
+    function onWebPaidAmountChanged() {
+      const amt = parseFloat(document.getElementById('loanPaidAmount').value) || 0;
+      const emi = parseFloat(document.getElementById('loanEmi').value) || 0;
+      const paidEmisInput = document.getElementById('loanPaidEmis');
+      if (paidEmisInput && emi > 0) {
+        paidEmisInput.value = Math.round(amt / emi);
+      }
+      updateWebLoanPreview();
+    }
+
+    function recalculateWebLoanEmi() {
       const P = parseFloat(document.getElementById('loanAmount').value) || 0;
       const rate = parseFloat(document.getElementById('loanRate').value) || 0;
       const n = parseInt(document.getElementById('loanTenure').value) || 1;
       let emi = 0;
-      if (n > 0 && P > 0) {
-        if (rate <= 0) {
+
+      if (P > 0 && n > 0) {
+        if (webLoanInterestMode === 'no_cost' || rate <= 0) {
           emi = P / n;
+        } else if (webLoanInterestMode === 'flat') {
+          const totalInterest = P * (rate / 100) * (n / 12);
+          emi = (P + totalInterest) / n;
         } else {
+          // Reducing balance standard formula
           const r = (rate / 12) / 100;
-          emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+          const factor = Math.pow(1 + r, n);
+          emi = (P * r * factor) / (factor - 1);
         }
       }
-      document.getElementById('loanEmi').value = emi > 0 ? emi.toFixed(2) : '';
+
+      const emiInput = document.getElementById('loanEmi');
+      if (emiInput && emi > 0) {
+        emiInput.value = emi.toFixed(0);
+        // update paid amount if paid emis exists
+        const paidEmis = parseInt(document.getElementById('loanPaidEmis').value) || 0;
+        if (paidEmis > 0) {
+          document.getElementById('loanPaidAmount').value = (paidEmis * emi).toFixed(0);
+        }
+      }
+      updateWebLoanPreview();
+    }
+
+    function updateWebLoanPreview() {
+      const P = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const n = parseInt(document.getElementById('loanTenure').value) || 0;
+      const emi = parseFloat(document.getElementById('loanEmi').value) || 0;
+      const paidAmt = parseFloat(document.getElementById('loanPaidAmount').value) || 0;
+      const paidEmis = parseInt(document.getElementById('loanPaidEmis').value) || 0;
+
+      const previewCard = document.getElementById('webLoanPreviewCard');
+      if (!previewCard) return;
+
+      if (P > 0 && emi > 0 && n > 0) {
+        previewCard.style.display = 'block';
+        const totalPayable = emi * n;
+        const totalInterest = Math.max(0, totalPayable - P);
+        const remaining = Math.max(0, totalPayable - paidAmt);
+
+        document.getElementById('webPreviewTotalPayable').innerText = `₹${totalPayable.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
+        document.getElementById('webPreviewTotalInterest').innerText = `₹${totalInterest.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
+        document.getElementById('webPreviewPaid').innerText = `₹${paidAmt.toLocaleString('en-IN', { minimumFractionDigits: 0 })} (${paidEmis}/${n} EMIs)`;
+        document.getElementById('webPreviewRemaining').innerText = `₹${remaining.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
+      } else {
+        previewCard.style.display = 'none';
+      }
     }
 
     function openAddLoanModal() {
       document.getElementById('loanName').value = '';
       document.getElementById('loanLender').value = '';
       document.getElementById('loanAmount').value = '';
-      document.getElementById('loanRate').value = '0';
+      document.getElementById('loanRate').value = '10.5';
       document.getElementById('loanTenure').value = '12';
       document.getElementById('loanEmi').value = '';
       document.getElementById('loanDueDay').value = '5';
       document.getElementById('loanPaidEmis').value = '0';
+      document.getElementById('loanPaidAmount').value = '0';
+      setWebLoanMode('reducing');
       document.getElementById('loanModal').classList.add('active');
     }
 
@@ -2221,16 +2403,17 @@
     function handleLoanSubmit(e) {
       e.preventDefault();
       const name = document.getElementById('loanName').value.trim();
-      const lender = document.getElementById('loanLender').value.trim();
+      const lender = document.getElementById('loanLender').value.trim() || 'Direct Lender';
       const principal = parseFloat(document.getElementById('loanAmount').value) || 0;
-      const rate = parseFloat(document.getElementById('loanRate').value) || 0;
+      const rate = webLoanInterestMode === 'no_cost' ? 0.0 : (parseFloat(document.getElementById('loanRate').value) || 0);
       const tenure = parseInt(document.getElementById('loanTenure').value) || 1;
       let emi = parseFloat(document.getElementById('loanEmi').value) || 0;
       if (emi <= 0) {
-        emi = rate <= 0 ? principal / tenure : (principal * (rate/12/100) * Math.pow(1+rate/12/100, tenure)) / (Math.pow(1+rate/12/100, tenure) - 1);
+        emi = principal / tenure;
       }
       const dueDay = parseInt(document.getElementById('loanDueDay').value) || 5;
       const paidEmis = parseInt(document.getElementById('loanPaidEmis').value) || 0;
+      const paidAmount = parseFloat(document.getElementById('loanPaidAmount').value) || (paidEmis * emi);
       const category = document.getElementById('loanCategory').value;
 
       const newLoan = {
@@ -2241,11 +2424,12 @@
         interestRate: rate,
         tenureMonths: tenure,
         monthlyEmi: emi,
-        paidEmis: paidEmis,
-        paidAmount: paidEmis * emi,
+        paidEmis: Math.min(tenure, paidEmis),
+        paidAmount: Math.min(emi * tenure, paidAmount),
         dueDay: dueDay,
         category: category,
         isClosed: paidEmis >= tenure,
+        interestType: webLoanInterestMode,
         startDate: new Date().toISOString()
       };
 
@@ -2253,6 +2437,16 @@
       persistData();
       closeLoanModal();
       showToast(`Added loan "${name}" successfully!`, 'success');
+    }
+
+    function formatDayOrdinal(day) {
+      if (day >= 11 && day <= 13) return `${day}th`;
+      switch (day % 10) {
+        case 1: return `${day}st`;
+        case 2: return `${day}nd`;
+        case 3: return `${day}rd`;
+        default: return `${day}th`;
+      }
     }
 
     function renderLoans() {
@@ -2263,14 +2457,27 @@
         return;
       }
 
+      const now = new Date();
+
       tbody.innerHTML = loans.map(l => {
         const totalPayable = l.monthlyEmi * l.tenureMonths;
         const remainingAmount = Math.max(0, totalPayable - l.paidAmount);
         const remainingEmis = Math.max(0, l.tenureMonths - l.paidEmis);
         const pct = Math.min(100, Math.round((l.paidAmount / totalPayable) * 100));
 
-        let statusText = l.isClosed ? 'Fully Paid 🎉' : `Due on Day ${l.dueDay}`;
-        let statusColor = l.isClosed ? 'var(--primary)' : 'var(--text-muted)';
+        let statusText = `Every ${formatDayOrdinal(l.dueDay)}`;
+        let statusColor = 'var(--text-muted)';
+
+        if (l.isClosed || remainingEmis === 0) {
+          statusText = 'Fully Paid 🎉';
+          statusColor = 'var(--primary)';
+        } else if (l.lastPaymentDate) {
+          const lpd = new Date(l.lastPaymentDate);
+          if (lpd.getMonth() === now.getMonth() && lpd.getFullYear() === now.getFullYear()) {
+            statusText = 'Paid this month ✓';
+            statusColor = 'var(--primary)';
+          }
+        }
 
         return `
           <tr>
@@ -2284,7 +2491,7 @@
               <span style="font-size: 11px; color: var(--text-dim);">${l.interestRate > 0 ? l.interestRate + '% p.a.' : '0% No-Cost EMI'}</span>
             </td>
             <td>
-              <strong style="color: var(--primary); font-size: 15px;">₹${l.monthlyEmi.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+              <strong style="color: var(--primary); font-size: 15px;">₹${l.monthlyEmi.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</strong>
               <div style="font-size: 11px; color: var(--text-dim);">per month</div>
             </td>
             <td style="min-width: 160px;">
@@ -2321,20 +2528,22 @@
       const loan = loans.find(l => l.id === id);
       if (!loan || loan.isClosed) return;
 
-      const newPaidCount = (loan.paidEmis || 0) + 1;
+      const newPaidCount = Math.min(loan.tenureMonths, (loan.paidEmis || 0) + 1);
       loan.paidEmis = newPaidCount;
-      loan.paidAmount = (loan.paidAmount || 0) + loan.monthlyEmi;
+      loan.paidAmount = Math.min(loan.monthlyEmi * loan.tenureMonths, (loan.paidAmount || 0) + loan.monthlyEmi);
+      loan.lastPaymentDate = new Date().toISOString();
+
       if (loan.paidEmis >= loan.tenureMonths) {
         loan.isClosed = true;
       }
 
-      // Automatically record expense transaction
+      // Automatically record expense transaction under 'Loans & EMIs'
       const tx = {
         id: 'tx_emi_' + Date.now(),
         title: `EMI: ${loan.name} (${newPaidCount}/${loan.tenureMonths})`,
         amount: loan.monthlyEmi,
         type: 'Expense',
-        category: 'Housing',
+        category: 'Loans & EMIs',
         paymentMethod: 'Bank Transfer',
         date: new Date().toISOString().split('T')[0],
         notes: `Monthly EMI payment to ${loan.lender}`
@@ -2342,7 +2551,7 @@
       transactions.unshift(tx);
 
       persistData();
-      showToast(`Recorded EMI payment of ₹${loan.monthlyEmi.toFixed(2)} for "${loan.name}"!`, 'success');
+      showToast(`Paid EMI of ₹${loan.monthlyEmi.toFixed(0)} for "${loan.name}"! Recorded in transactions.`, 'success');
     }
 
     function deleteLoan(id) {
@@ -2351,6 +2560,7 @@
       persistData();
       showToast('Loan plan removed.', 'info');
     }
+
 </script>
 </body>
 </html>

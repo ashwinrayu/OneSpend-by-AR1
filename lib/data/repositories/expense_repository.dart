@@ -374,8 +374,8 @@ class ExpenseRepository {
     final db = await _db;
     final now = DateTime.now();
 
-    final newPaidEmis = loan.paidEmis + 1;
-    final newPaidAmount = loan.paidAmount + loan.monthlyEmi;
+    final newPaidEmis = (loan.paidEmis + 1).clamp(0, loan.tenureMonths);
+    final newPaidAmount = (loan.paidAmount + loan.monthlyEmi).clamp(0.0, loan.totalPayable);
     final isNowClosed = newPaidEmis >= loan.tenureMonths;
 
     // 1. Insert an Expense transaction for this EMI
@@ -397,6 +397,7 @@ class ExpenseRepository {
       paidEmis: newPaidEmis,
       paidAmount: newPaidAmount,
       isClosed: isNowClosed,
+      lastPaymentDate: now,
     );
     await updateLoan(updatedLoan);
   }

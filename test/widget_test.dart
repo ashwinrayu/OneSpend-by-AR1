@@ -223,6 +223,15 @@ void main() {
     );
     expect((standardEmi - 8884.88).abs() < 1.0, true);
 
+    // Flat rate calculation: 100,000 at 12% flat for 12 months -> Interest = 12,000, Total = 112,000, EMI = ~9333.33
+    final flatEmi = LoanItem.calculateEmi(
+      principal: 100000.0,
+      annualInterestRate: 12.0,
+      tenureMonths: 12,
+      interestType: 'flat',
+    );
+    expect((flatEmi - 9333.33).abs() < 1.0, true);
+
     // 3. LoanItem model properties and getters
     final loan = LoanItem(
       id: 'loan_test_1',

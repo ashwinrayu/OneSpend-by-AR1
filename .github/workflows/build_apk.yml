@@ -53,12 +53,18 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Extract Version
+        id: get_version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          echo "VERSION=v$VERSION" >> $GITHUB_ENV
+
       - name: Publish to GitHub Releases for Cloud In-App Auto-Update
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: latest
-          name: OneSpend by AR1 (Latest Production)
+          tag_name: ${{ env.VERSION }}
+          name: OneSpend ${{ env.VERSION }} (Production)
           body: |
             Automated production build from commit ${{ github.sha }}.
             • Direct In-App Cloud Auto-Updater enabled

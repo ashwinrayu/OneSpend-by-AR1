@@ -44,7 +44,7 @@ class AppDatabase {
 
     return await openDatabase(
       dbPath,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -114,7 +114,9 @@ class AppDatabase {
         category TEXT NOT NULL,
         paymentMethod TEXT NOT NULL,
         isClosed INTEGER NOT NULL DEFAULT 0,
-        notes TEXT
+        notes TEXT,
+        interestType TEXT NOT NULL DEFAULT 'reducing',
+        lastPaymentDate INTEGER
       )
     ''');
 
@@ -186,6 +188,13 @@ class AppDatabase {
           )
         ''');
       } catch (_) {}
+    if (oldVersion < 6) {
+      try {
+        await db.execute("ALTER TABLE loans ADD COLUMN interestType TEXT NOT NULL DEFAULT 'reducing'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE loans ADD COLUMN lastPaymentDate INTEGER");
+      } catch (_) {}
     }
   }
 
@@ -194,6 +203,13 @@ class AppDatabase {
     if (db != null) {
       await db.close();
       _database = null;
+    if (oldVersion < 6) {
+      try {
+        await db.execute("ALTER TABLE loans ADD COLUMN interestType TEXT NOT NULL DEFAULT 'reducing'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE loans ADD COLUMN lastPaymentDate INTEGER");
+      } catch (_) {}
     }
   }
 }
