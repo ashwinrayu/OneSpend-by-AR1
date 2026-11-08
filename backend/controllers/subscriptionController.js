@@ -229,3 +229,4 @@ export const syncSubscriptions = async (req, res) => {
     client.release();
   }
 };
+

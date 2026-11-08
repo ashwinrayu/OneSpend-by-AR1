@@ -69,7 +69,12 @@ class LoanItem {
   }
 
   /// Total amount payable over the tenure (Principal + Interest)
-  double get totalPayable => monthlyEmi * tenureMonths;
+  double get totalPayable {
+    if (interestRate <= 0.0 || interestType == 'no_cost') {
+      return totalAmount;
+    }
+    return monthlyEmi * tenureMonths;
+  }
 
   /// Total interest payable over the tenure
   double get totalInterest => max(0.0, totalPayable - totalAmount);

@@ -36,11 +36,11 @@ app.get('/health', (req, res) => {
 // App Version & In-App Cloud Auto-Updater Endpoint
 app.get('/api/app/version', (req, res) => {
   res.status(200).json({
-    latestVersion: '1.2.3',
-    buildNumber: 9,
+    latestVersion: '1.2.4',
+    buildNumber: 10,
     releaseDate: '2026-11-08',
-    releaseNotes: '• 🔄 Full Live Sync for Subscriptions: Subscriptions and recurring bills now sync seamlessly in real-time between Android APK and Web\n• ⚡ Immediate Auto-Sync: Adding, updating, deleting or paying subscriptions triggers instant background cloud synchronization\n• 🗄️ PostgreSQL Cloud Schema: Dedicated subscriptions table with delta-sync and conflict resolution',
-    downloadUrl: 'https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.3/app-release.apk',
+    releaseNotes: '• 🧮 Two-Way Linked Loan & EMI Calculations: Principal, Monthly EMI, Tenure, and Paid Amount calculate accurately without mismatch\n• 🔀 Optional Interest Rate & Details: Interest rate is OFF by default (0% No-Cost EMI); financial institution details are neatly tucked into optional toggle\n• 🔒 Enhanced Sign-Out Privacy: Completely clears session data, metrics, and cached loans/transactions upon signing out\n• ⚡ Instant Live Cloud Sync: Enhanced real-time synchronization between Android APK and Web with focus-triggered updates',
+    downloadUrl: 'https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.4/app-release.apk',
     webAppUrl: 'https://onespend.vercel.app',
     isMandatory: false
   });

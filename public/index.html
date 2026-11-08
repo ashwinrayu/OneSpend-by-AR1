@@ -922,11 +922,11 @@
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.3/app-release.apk" class="btn btn-primary" style="padding: 4px 9px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; text-decoration: none;" download title="Download Android APK v1.2.3">
+          <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.4/app-release.apk" class="btn btn-primary" style="padding: 4px 9px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; text-decoration: none;" download title="Download Android APK v1.2.4">
             <i class="fa-brands fa-android"></i> APK
           </a>
           <div id="mobileAuthHeaderArea"></div>
-          <div class="sync-status" onclick="syncWebWithCloud(false)" style="margin: 0; padding: 4px 8px; cursor: pointer;" title="Tap to sync with Cloud">
+          <div class="sync-status" onclick="syncWebWithCloud(false, true)" style="margin: 0; padding: 4px 8px; cursor: pointer;" title="Tap to sync with Cloud">
             <div class="sync-dot"></div>
             <span style="font-size: 11px;">Live Sync</span>
           </div>
@@ -942,14 +942,14 @@
           <input type="text" id="globalSearch" placeholder="Search transactions, notes, payees..." oninput="handleSearch()">
         </div>
         <div class="header-actions">
-          <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.3/app-release.apk" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 12px; padding: 7px 12px;" download title="Download Android Release APK">
+          <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.4/app-release.apk" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 12px; padding: 7px 12px;" download title="Download Android Release APK">
             <i class="fa-brands fa-android" style="font-size: 14px;"></i>
-            <span>Download App <span style="background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 2px;">v1.2.3</span></span>
+            <span>Download App <span style="background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 2px;">v1.2.4</span></span>
           </a>
           <div id="authHeaderArea"></div>
-          <div class="sync-status" onclick="syncWebWithCloud(false)" style="cursor: pointer;" title="Click to sync with Cloud">
+          <div class="sync-status" onclick="syncWebWithCloud(false, true)" style="cursor: pointer;" title="Click to sync with Cloud">
             <div class="sync-dot"></div>
-            <span id="syncText">Render Live Cloud: Synced</span>
+            <span id="syncText">Offline Vault</span>
           </div>
           <button class="btn btn-secondary" onclick="exportToCSV()">
             <i class="fa-solid fa-file-export"></i> Export CSV
@@ -1340,120 +1340,127 @@
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label">Loan / Plan Name *</label>
-            <input type="text" id="loanName" class="form-control" placeholder="e.g. MacBook Pro, Car Loan, Home Loan" required>
+            <input type="text" id="loanName" class="form-control" placeholder="e.g. Personal Loan, Friend Loan, Phone EMI" required>
           </div>
+
           <div class="form-group">
-            <label class="form-label">Lender / Financial Institution</label>
-            <input type="text" id="loanLender" class="form-control" placeholder="e.g. HDFC Bank, SBI, Bajaj Finserv">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Total Loan Principal Amount (₹) *</label>
-            <input type="number" id="loanAmount" class="form-control" placeholder="e.g. 60000" step="0.01" required oninput="onWebLoanInputChanged()">
+            <label class="form-label">Total Loan Amount (₹) *</label>
+            <input type="number" id="loanAmount" class="form-control" placeholder="e.g. 50000" step="0.01" required oninput="onWebLoanAmountChanged()">
           </div>
 
-          <!-- Calculation Mode Selection -->
-          <div class="form-group">
-            <label class="form-label">Interest & Calculation Mode</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button type="button" id="modeBtnNoCost" class="btn btn-secondary" onclick="setWebLoanMode('no_cost')" style="padding: 5px 10px; font-size: 11px;">
-                0% No-Cost EMI
-              </button>
-              <button type="button" id="modeBtnReducing" class="btn btn-primary" onclick="setWebLoanMode('reducing')" style="padding: 5px 10px; font-size: 11px;">
-                Reducing Rate (% p.a.)
-              </button>
-              <button type="button" id="modeBtnFlat" class="btn btn-secondary" onclick="setWebLoanMode('flat')" style="padding: 5px 10px; font-size: 11px;">
-                Flat Rate (% p.a.)
-              </button>
-              <button type="button" id="modeBtnCustom" class="btn btn-secondary" onclick="setWebLoanMode('custom')" style="padding: 5px 10px; font-size: 11px;">
-                Custom / Direct EMI
-              </button>
+          <!-- Monthly EMI & Tenure Side-by-Side (Linked 2-way) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="color: var(--primary); font-weight: 700;">Monthly EMI (₹) *</label>
+              <input type="number" id="loanEmi" class="form-control" placeholder="e.g. 5000" step="0.01" style="font-weight: 700;" required oninput="onWebLoanEmiChanged()">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Tenure (Months) *</label>
+              <input type="number" id="loanTenure" class="form-control" placeholder="e.g. 10" min="1" max="360" required oninput="onWebLoanTenureChanged()">
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" id="rateAndTenureRow">
-            <div class="form-group" id="rateFormGroup">
-              <label class="form-label">Interest Rate (% p.a.)</label>
-              <input type="number" id="loanRate" class="form-control" placeholder="e.g. 10.5" step="0.1" value="10.5" oninput="onWebLoanInputChanged()">
+          <!-- Repayment So Far (Linked 2-way) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Already Paid Amount (₹)</label>
+              <input type="number" id="loanPaidAmount" class="form-control" placeholder="0" step="0.01" value="0" oninput="onWebPaidAmountChanged()">
             </div>
-            <div class="form-group">
-              <label class="form-label">Tenure (Total Months) *</label>
-              <input type="number" id="loanTenure" class="form-control" placeholder="e.g. 12" min="1" max="360" value="12" required oninput="onWebLoanInputChanged()">
-            </div>
-          </div>
-
-          <!-- Monthly EMI Field (Always Editable) -->
-          <div class="form-group" style="background: var(--bg-surface-elevated); padding: 12px; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.3);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <label class="form-label" style="margin: 0; color: var(--primary); font-weight: 700;">Monthly EMI (₹) *</label>
-              <span id="webEmiModeBadge" style="font-size: 10px; color: var(--text-dim); text-transform: uppercase;">Auto-Calculated</span>
-            </div>
-            <input type="number" id="loanEmi" class="form-control" placeholder="0.00" step="0.01" style="font-size: 18px; font-weight: 800; color: var(--primary);" required oninput="onWebEmiDirectlyEdited()">
-            <span style="font-size: 10px; color: var(--text-muted);">You can freely edit or type this amount directly.</span>
-          </div>
-
-          <!-- Repayment Progress -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group">
-              <label class="form-label">EMIs Paid So Far</label>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">EMIs Paid</label>
               <input type="number" id="loanPaidEmis" class="form-control" placeholder="0" min="0" value="0" oninput="onWebPaidEmisChanged()">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Total Amount Paid (₹)</label>
-              <input type="number" id="loanPaidAmount" class="form-control" placeholder="0.00" step="0.01" value="0" oninput="onWebPaidAmountChanged()">
             </div>
           </div>
 
           <!-- Real-Time Calculation Preview Card -->
-          <div id="webLoanPreviewCard" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px; font-size: 12px; display: none;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <div id="webLoanPreviewCard" style="background: var(--bg-surface); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; font-size: 12px; display: none;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
               <span style="color: var(--text-muted);">Total Amount Payable:</span>
               <strong id="webPreviewTotalPayable" style="color: var(--text-main);">₹0.00</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span style="color: var(--text-muted);">Total Interest Included:</span>
+            <div id="webPreviewInterestRow" style="display: none; justify-content: space-between; margin-bottom: 5px;">
+              <span style="color: var(--text-muted);">Total Interest:</span>
               <strong id="webPreviewTotalInterest" style="color: var(--warning);">₹0.00</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span style="color: var(--text-muted);">Already Repaid:</span>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+              <span style="color: var(--text-muted);">Already Paid:</span>
               <strong id="webPreviewPaid" style="color: var(--primary);">₹0.00</strong>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-muted);">Remaining Debt:</span>
-              <strong id="webPreviewRemaining" style="color: #F43F5E;">₹0.00</strong>
+            <div style="display: flex; justify-content: space-between; padding-top: 5px; border-top: 1px solid var(--border-subtle);">
+              <span style="color: var(--text-muted); font-weight: 600;">Remaining Debt Balance:</span>
+              <strong id="webPreviewRemaining" style="color: #F43F5E; font-size: 13px;">₹0.00</strong>
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group">
-              <label class="form-label">Due Day of Month</label>
-              <select id="loanDueDay" class="form-control">
-                <option value="1">Every 1st</option>
-                <option value="2">Every 2nd</option>
-                <option value="3">Every 3rd</option>
-                <option value="4">Every 4th</option>
-                <option value="5" selected>Every 5th</option>
-                <option value="6">Every 6th</option>
-                <option value="7">Every 7th</option>
-                <option value="8">Every 8th</option>
-                <option value="9">Every 9th</option>
-                <option value="10">Every 10th</option>
-                <option value="12">Every 12th</option>
-                <option value="15">Every 15th</option>
-                <option value="20">Every 20th</option>
-                <option value="25">Every 25th</option>
-                <option value="28">Every 28th</option>
-              </select>
+          <!-- Switch 1: Include Interest / APR (Optional, OFF by default) -->
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px;">
+            <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin: 0;">
+              <span style="font-weight: 600; font-size: 12px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-percent" style="color: var(--primary); font-size: 11px;"></i> Add Interest / APR Rate (Optional)
+              </span>
+              <input type="checkbox" id="loanInterestSwitch" onchange="toggleWebLoanInterestSwitch()" style="width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;">
+            </label>
+            <div id="loanInterestOptionsArea" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle);">
+              <div style="margin-bottom: 10px;">
+                <label class="form-label" style="font-size: 11px;">Calculation Mode</label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" id="modeBtnReducing" class="btn btn-primary" onclick="setWebLoanMode('reducing')" style="padding: 4px 8px; font-size: 11px;">
+                    Reducing Rate
+                  </button>
+                  <button type="button" id="modeBtnFlat" class="btn btn-secondary" onclick="setWebLoanMode('flat')" style="padding: 4px 8px; font-size: 11px;">
+                    Flat Rate
+                  </button>
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 11px;">Annual Interest Rate (% p.a.)</label>
+                <input type="number" id="loanRate" class="form-control" placeholder="e.g. 10.5" step="0.1" value="10.5" oninput="onWebLoanRateChanged()">
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Category</label>
-              <select id="loanCategory" class="form-control">
-                <option value="Gadgets / Electronics">Gadgets & Electronics</option>
-                <option value="Vehicle / Car">Vehicle / Auto</option>
-                <option value="Home Loan">Home Loan</option>
-                <option value="Education">Education</option>
-                <option value="Personal" selected>Personal Loan</option>
-                <option value="Other">Other</option>
-              </select>
+          </div>
+
+          <!-- Switch 2: More Options (Lender, Due Day, Category) (Optional, OFF by default) -->
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 14px;">
+            <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin: 0;">
+              <span style="font-weight: 600; font-size: 12px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-sliders" style="color: var(--text-dim); font-size: 11px;"></i> More Details (Lender, Due Day, Category)
+              </span>
+              <input type="checkbox" id="loanMoreOptionsSwitch" onchange="toggleWebLoanMoreOptionsSwitch()" style="width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;">
+            </label>
+            <div id="loanMoreOptionsArea" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle);">
+              <div class="form-group">
+                <label class="form-label" style="font-size: 11px;">Lender / Bank / Person</label>
+                <input type="text" id="loanLender" class="form-control" placeholder="e.g. HDFC Bank, SBI, Friend">
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" style="font-size: 11px;">Due Day of Month</label>
+                  <select id="loanDueDay" class="form-control">
+                    <option value="1">Every 1st</option>
+                    <option value="2">Every 2nd</option>
+                    <option value="3">Every 3rd</option>
+                    <option value="4">Every 4th</option>
+                    <option value="5" selected>Every 5th</option>
+                    <option value="10">Every 10th</option>
+                    <option value="15">Every 15th</option>
+                    <option value="20">Every 20th</option>
+                    <option value="25">Every 25th</option>
+                    <option value="28">Every 28th</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" style="font-size: 11px;">Category</label>
+                  <select id="loanCategory" class="form-control">
+                    <option value="Personal" selected>Personal</option>
+                    <option value="Gadgets / Electronics">Gadgets / Electronics</option>
+                    <option value="Vehicle / Car">Vehicle / Auto</option>
+                    <option value="Home Loan">Home Loan</option>
+                    <option value="Education">Education</option>
+                    <option value="Business">Business</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1761,10 +1768,10 @@
       let totalMonthlyEmi = 0;
       let totalLoanPaid = 0;
       loans.forEach(l => {
-        const totalPayable = (parseFloat(l.monthlyEmi) || 0) * (parseInt(l.tenureMonths) || 1);
+        const totalPayable = getLoanTotalPayable(l);
         const paidAmount = parseFloat(l.paidAmount) || 0;
-        const remaining = Math.max(0, totalPayable - paidAmount);
-        if (!l.isClosed) {
+        const remaining = getLoanRemaining(l);
+        if (!l.isClosed && remaining > 0) {
           totalLoanDebt += remaining;
           totalMonthlyEmi += (parseFloat(l.monthlyEmi) || 0);
         }
@@ -2347,13 +2354,14 @@
       };
     }
 
-    async function syncWebWithCloud(silent = false) {
+    async function syncWebWithCloud(silent = false, forceFull = false) {
       const token = localStorage.getItem(STORAGE_KEY_TOKEN);
       if (!token) {
         if (!silent) {
           openAuthModal();
           showToast('Please sign in with your OneSpend account to sync data with your mobile app.', 'info');
         }
+        updateSyncStatusUI('offline');
         return;
       }
 
@@ -2364,7 +2372,7 @@
       try {
         // 1. Concurrent Transactions Delta-Sync
         const clientChanges = transactions.map(t => normalizeClientChange(t, false));
-        const lastSyncedAt = localStorage.getItem(STORAGE_KEY_WEB_SYNC) || null;
+        const lastSyncedAt = forceFull ? null : (localStorage.getItem(STORAGE_KEY_WEB_SYNC) || null);
 
         const txPromise = fetch('https://onespend-by-ar1.onrender.com/api/transactions/sync', {
           method: 'POST',
@@ -2379,7 +2387,7 @@
         });
 
         // 2. Concurrent Loans Delta-Sync
-        const lastLoanSyncedAt = localStorage.getItem(STORAGE_KEY_LOAN_SYNC) || null;
+        const lastLoanSyncedAt = forceFull ? null : (localStorage.getItem(STORAGE_KEY_LOAN_SYNC) || null);
         let deletedLoanIds = [];
         try {
           deletedLoanIds = JSON.parse(localStorage.getItem(STORAGE_KEY_DELETED_LOANS)) || [];
@@ -2403,7 +2411,7 @@
         });
 
         // 3. Concurrent Subscriptions Delta-Sync
-        const lastSubSyncedAt = localStorage.getItem(STORAGE_KEY_SUB_SYNC) || null;
+        const lastSubSyncedAt = forceFull ? null : (localStorage.getItem(STORAGE_KEY_SUB_SYNC) || null);
         let deletedSubIds = [];
         try {
           deletedSubIds = JSON.parse(localStorage.getItem(STORAGE_KEY_DELETED_SUBS)) || [];
@@ -2443,7 +2451,9 @@
           const data = await txRes.json();
           if (data.serverChanges && Array.isArray(data.serverChanges)) {
             const txMap = new Map();
-            transactions.forEach(t => txMap.set(String(t.id), t));
+            if (!forceFull) {
+              transactions.forEach(t => txMap.set(String(t.id), t));
+            }
 
             data.serverChanges.forEach(sc => {
               if (sc.is_deleted) {
@@ -2468,7 +2478,9 @@
           const loanData = await loanRes.json();
           if (loanData.serverChanges && Array.isArray(loanData.serverChanges)) {
             const loanMap = new Map();
-            loans.forEach(l => loanMap.set(String(l.id), l));
+            if (!forceFull) {
+              loans.forEach(l => loanMap.set(String(l.id), l));
+            }
 
             loanData.serverChanges.forEach(sc => {
               if (sc.is_deleted) {
@@ -2494,7 +2506,9 @@
           const subData = await subRes.json();
           if (subData.serverChanges && Array.isArray(subData.serverChanges)) {
             const subMap = new Map();
-            subscriptions.forEach(s => subMap.set(String(s.id), s));
+            if (!forceFull) {
+              subscriptions.forEach(s => subMap.set(String(s.id), s));
+            }
 
             subData.serverChanges.forEach(sc => {
               if (sc.is_deleted) {
@@ -2515,7 +2529,7 @@
           }
         }
 
-        if (hasTxChanges || hasLoanChanges || hasSubChanges) {
+        if (hasTxChanges || hasLoanChanges || hasSubChanges || forceFull) {
           persistData();
         }
 
@@ -2542,11 +2556,11 @@
         if (status === 'syncing') {
           syncText.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin"></i> Syncing...';
         } else if (status === 'synced') {
-          syncText.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Render Live: Synced';
+          syncText.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Live Synced';
         } else if (status === 'error') {
-          syncText.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Sync Error';
+          syncText.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Sync Issue';
         } else {
-          syncText.innerHTML = '<i class="fa-solid fa-cloud"></i> Offline Vault';
+          syncText.innerHTML = '<i class="fa-solid fa-cloud-slash"></i> Offline Vault';
         }
       }
     }
@@ -2567,7 +2581,7 @@
             <span style="font-size: 12px; font-weight: 600; color: var(--primary); display: inline-flex; align-items: center; gap: 5px;">
               <i class="fa-solid fa-circle-user"></i> ${escapeHtml(name)}
             </span>
-            <button class="btn btn-outline-success" onclick="syncWebWithCloud(false)" title="Sync Now with Mobile & Cloud" style="padding: 4px 10px; font-size: 11px; border: 1px solid var(--primary); color: var(--primary); background: rgba(16, 185, 129, 0.1);">
+            <button class="btn btn-outline-success" onclick="syncWebWithCloud(false, true)" title="Sync Now with Mobile & Cloud" style="padding: 4px 10px; font-size: 11px; border: 1px solid var(--primary); color: var(--primary); background: rgba(16, 185, 129, 0.1);">
               <i class="fa-solid fa-arrows-rotate"></i> Sync
             </button>
             <button class="btn btn-secondary" onclick="logoutWeb()" style="padding: 4px 10px; font-size: 11px;">
@@ -2577,7 +2591,7 @@
         `;
         if (desktopContainer) desktopContainer.innerHTML = html;
         if (mobileContainer) mobileContainer.innerHTML = `
-          <button class="btn btn-outline-success" onclick="syncWebWithCloud(false)" style="padding: 3px 6px; font-size: 10px; border: 1px solid var(--primary); color: var(--primary);">
+          <button class="btn btn-outline-success" onclick="syncWebWithCloud(false, true)" style="padding: 3px 6px; font-size: 10px; border: 1px solid var(--primary); color: var(--primary);">
             <i class="fa-solid fa-arrows-rotate"></i>
           </button>
           <button class="btn btn-secondary" onclick="logoutWeb()" style="padding: 3px 8px; font-size: 10px;">
@@ -2585,6 +2599,7 @@
           </button>
         `;
       } else {
+        updateSyncStatusUI('offline');
         const loginBtnHtml = `
           <button class="btn btn-primary" onclick="openAuthModal()" style="padding: 6px 14px; font-size: 12px;">
             <i class="fa-solid fa-user-circle"></i> Sign In
@@ -2653,8 +2668,8 @@
           closeAuthModal();
           renderAuthStatus();
           showToast(`Welcome back, ${data.user.full_name || data.user.email}! Syncing vault...`, 'success');
-          // Immediate bidirectional cloud sync
-          syncWebWithCloud(false);
+          // Immediate bidirectional cloud full sync
+          syncWebWithCloud(false, true);
         } else {
           showToast(data.error || 'Login failed. Please check your credentials.', 'error');
         }
@@ -2689,8 +2704,8 @@
           closeAuthModal();
           renderAuthStatus();
           showToast(`Account created! Welcome, ${data.user.full_name || data.user.email}! Syncing vault...`, 'success');
-          // Immediate bidirectional cloud sync
-          syncWebWithCloud(false);
+          // Immediate bidirectional cloud full sync
+          syncWebWithCloud(false, true);
         } else {
           showToast(data.error || 'Registration failed.', 'error');
         }
@@ -2703,14 +2718,32 @@
     }
 
     function logoutWeb() {
+      // 1. Clear all auth tokens and delta-sync timestamps
       localStorage.removeItem(STORAGE_KEY_TOKEN);
       localStorage.removeItem(STORAGE_KEY_USER);
       localStorage.removeItem(STORAGE_KEY_WEB_SYNC);
       localStorage.removeItem(STORAGE_KEY_LOAN_SYNC);
+      localStorage.removeItem(STORAGE_KEY_SUB_SYNC);
       localStorage.removeItem(STORAGE_KEY_DELETED_LOANS);
+      localStorage.removeItem(STORAGE_KEY_DELETED_SUBS);
+
+      // 2. Clear all local cached data completely
+      localStorage.removeItem(STORAGE_KEY_TX);
+      localStorage.removeItem(STORAGE_KEY_LOANS);
+      localStorage.removeItem(STORAGE_KEY_SUBS);
+
+      // 3. Reset in-memory states
+      transactions = [];
+      loans = [];
+      subscriptions = [];
+
+      // 4. Reset UI to empty zero state and offline status
+      renderAll();
       renderAuthStatus();
       updateSyncStatusUI('offline');
-      showToast('Signed out successfully. Running in offline Guest Mode.', 'info');
+
+      showToast('Signed out successfully. All local session data cleared from browser.', 'info');
+      openAuthModal();
     }
 
     function escapeHtml(str) {
@@ -2728,66 +2761,135 @@
       renderAll();
       renderAuthStatus();
       if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
-        syncWebWithCloud(true);
+        syncWebWithCloud(true, false);
       }
     });
 
-    // Auto-sync in background every 60 seconds if authenticated
+    // Instant sync when tab gains focus or becomes visible
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && localStorage.getItem(STORAGE_KEY_TOKEN)) {
+        syncWebWithCloud(true, false);
+      }
+    });
+    window.addEventListener('focus', () => {
+      if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
+        syncWebWithCloud(true, false);
+      }
+    });
+
+    // Auto-sync in background every 15 seconds if authenticated
     setInterval(() => {
       if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
-        syncWebWithCloud(true);
+        syncWebWithCloud(true, false);
       }
-    }, 60000);
+    }, 15000);
   
     // ==========================================
     // LOANS & EMI PLAN METHODS
     // ==========================================
-    let webLoanInterestMode = 'reducing'; // 'no_cost', 'reducing', 'flat', 'custom'
+    let webLoanInterestMode = 'no_cost'; // 'no_cost', 'reducing', 'flat'
+
+    function toggleWebLoanInterestSwitch() {
+      const sw = document.getElementById('loanInterestSwitch');
+      const area = document.getElementById('loanInterestOptionsArea');
+      const interestRow = document.getElementById('webPreviewInterestRow');
+      if (sw && sw.checked) {
+        if (area) area.style.display = 'block';
+        if (interestRow) interestRow.style.display = 'flex';
+        webLoanInterestMode = 'reducing';
+        setWebLoanMode('reducing');
+      } else {
+        if (area) area.style.display = 'none';
+        if (interestRow) interestRow.style.display = 'none';
+        webLoanInterestMode = 'no_cost';
+        const rateInput = document.getElementById('loanRate');
+        if (rateInput) rateInput.value = '0';
+        recalculateWebLoanEmi();
+      }
+    }
+
+    function toggleWebLoanMoreOptionsSwitch() {
+      const sw = document.getElementById('loanMoreOptionsSwitch');
+      const area = document.getElementById('loanMoreOptionsArea');
+      if (sw && area) {
+        area.style.display = sw.checked ? 'block' : 'none';
+      }
+    }
 
     function setWebLoanMode(mode) {
       webLoanInterestMode = mode;
-      ['NoCost', 'Reducing', 'Flat', 'Custom'].forEach(m => {
+      ['Reducing', 'Flat'].forEach(m => {
         const btn = document.getElementById('modeBtn' + m);
         if (btn) {
-          btn.className = (m.toLowerCase() === mode.replace('_', '')) ? 'btn btn-primary' : 'btn btn-secondary';
+          btn.className = (m.toLowerCase() === mode) ? 'btn btn-primary' : 'btn btn-secondary';
         }
       });
-
-      const rateGroup = document.getElementById('rateFormGroup');
-      const rateInput = document.getElementById('loanRate');
-      if (mode === 'no_cost') {
-        if (rateGroup) rateGroup.style.display = 'none';
-        if (rateInput) rateInput.value = '0';
-      } else {
-        if (rateGroup) rateGroup.style.display = 'block';
-        if (rateInput && (!rateInput.value || parseFloat(rateInput.value) <= 0)) {
-          rateInput.value = '10.5';
-        }
-      }
-
-      const badge = document.getElementById('webEmiModeBadge');
-      if (badge) badge.innerText = mode === 'custom' ? 'Custom Input' : 'Auto-Calculated';
-
       recalculateWebLoanEmi();
     }
 
-    function onWebLoanInputChanged() {
-      if (webLoanInterestMode !== 'custom') {
-        recalculateWebLoanEmi();
-      } else {
-        updateWebLoanPreview();
+    function calculateInterestEmi(P, rate, n, mode) {
+      if (P <= 0 || n <= 0) return 0;
+      if (mode === 'no_cost' || rate <= 0) return P / n;
+      if (mode === 'flat') {
+        const totalInterest = P * (rate / 100) * (n / 12);
+        return (P + totalInterest) / n;
       }
+      // Reducing balance standard formula
+      const r = (rate / 12) / 100;
+      const factor = Math.pow(1 + r, n);
+      const denom = factor - 1;
+      if (denom === 0) return P / n;
+      return (P * r * factor) / denom;
     }
 
-    function onWebEmiDirectlyEdited() {
-      if (webLoanInterestMode !== 'custom') {
-        webLoanInterestMode = 'custom';
-        ['NoCost', 'Reducing', 'Flat', 'Custom'].forEach(m => {
-          const btn = document.getElementById('modeBtn' + m);
-          if (btn) btn.className = (m === 'Custom') ? 'btn btn-primary' : 'btn btn-secondary';
-        });
-        const badge = document.getElementById('webEmiModeBadge');
-        if (badge) badge.innerText = 'Custom Input';
+    function onWebLoanAmountChanged() {
+      const P = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const emiInput = document.getElementById('loanEmi');
+      const tenureInput = document.getElementById('loanTenure');
+      const emi = parseFloat(emiInput.value) || 0;
+      const tenure = parseInt(tenureInput.value) || 0;
+
+      if (P > 0) {
+        if (emi > 0) {
+          tenureInput.value = Math.max(1, Math.round(P / emi));
+        } else if (tenure > 0) {
+          recalculateWebLoanEmi();
+        }
+      }
+      updateWebLoanPreview();
+    }
+
+    function onWebLoanEmiChanged() {
+      const P = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const emi = parseFloat(document.getElementById('loanEmi').value) || 0;
+      const tenureInput = document.getElementById('loanTenure');
+      if (P > 0 && emi > 0) {
+        tenureInput.value = Math.max(1, Math.round(P / emi));
+      }
+      updateWebLoanPreview();
+    }
+
+    function onWebLoanTenureChanged() {
+      recalculateWebLoanEmi();
+    }
+
+    function onWebLoanRateChanged() {
+      recalculateWebLoanEmi();
+    }
+
+    function recalculateWebLoanEmi() {
+      const P = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const sw = document.getElementById('loanInterestSwitch');
+      const hasInterest = sw && sw.checked;
+      const rate = hasInterest ? (parseFloat(document.getElementById('loanRate').value) || 0) : 0;
+      const n = parseInt(document.getElementById('loanTenure').value) || 0;
+
+      if (P > 0 && n > 0) {
+        const emi = calculateInterestEmi(P, rate, n, webLoanInterestMode);
+        const emiInput = document.getElementById('loanEmi');
+        if (emiInput) {
+          emiInput.value = emi > 0 ? Math.round(emi) : '';
+        }
       }
       updateWebLoanPreview();
     }
@@ -2797,7 +2899,7 @@
       const emi = parseFloat(document.getElementById('loanEmi').value) || 0;
       const paidAmtInput = document.getElementById('loanPaidAmount');
       if (paidAmtInput && emi > 0) {
-        paidAmtInput.value = (emis * emi).toFixed(0);
+        paidAmtInput.value = Math.round(emis * emi);
       }
       updateWebLoanPreview();
     }
@@ -2812,36 +2914,18 @@
       updateWebLoanPreview();
     }
 
-    function recalculateWebLoanEmi() {
-      const P = parseFloat(document.getElementById('loanAmount').value) || 0;
-      const rate = parseFloat(document.getElementById('loanRate').value) || 0;
-      const n = parseInt(document.getElementById('loanTenure').value) || 1;
-      let emi = 0;
-
-      if (P > 0 && n > 0) {
-        if (webLoanInterestMode === 'no_cost' || rate <= 0) {
-          emi = P / n;
-        } else if (webLoanInterestMode === 'flat') {
-          const totalInterest = P * (rate / 100) * (n / 12);
-          emi = (P + totalInterest) / n;
-        } else {
-          // Reducing balance standard formula
-          const r = (rate / 12) / 100;
-          const factor = Math.pow(1 + r, n);
-          emi = (P * r * factor) / (factor - 1);
-        }
+    function getLoanTotalPayable(l) {
+      const hasInterest = (parseFloat(l.interestRate) > 0 && l.interestType !== 'no_cost');
+      if (!hasInterest) {
+        return parseFloat(l.totalAmount) || 0;
       }
+      return (parseFloat(l.monthlyEmi) || 0) * (parseInt(l.tenureMonths) || 1);
+    }
 
-      const emiInput = document.getElementById('loanEmi');
-      if (emiInput && emi > 0) {
-        emiInput.value = emi.toFixed(0);
-        // update paid amount if paid emis exists
-        const paidEmis = parseInt(document.getElementById('loanPaidEmis').value) || 0;
-        if (paidEmis > 0) {
-          document.getElementById('loanPaidAmount').value = (paidEmis * emi).toFixed(0);
-        }
-      }
-      updateWebLoanPreview();
+    function getLoanRemaining(l) {
+      const totalPayable = getLoanTotalPayable(l);
+      const paid = parseFloat(l.paidAmount) || 0;
+      return Math.max(0, totalPayable - paid);
     }
 
     function updateWebLoanPreview() {
@@ -2850,18 +2934,28 @@
       const emi = parseFloat(document.getElementById('loanEmi').value) || 0;
       const paidAmt = parseFloat(document.getElementById('loanPaidAmount').value) || 0;
       const paidEmis = parseInt(document.getElementById('loanPaidEmis').value) || 0;
+      const sw = document.getElementById('loanInterestSwitch');
+      const hasInterest = sw && sw.checked;
 
       const previewCard = document.getElementById('webLoanPreviewCard');
       if (!previewCard) return;
 
       if (P > 0 && emi > 0 && n > 0) {
         previewCard.style.display = 'block';
-        const totalPayable = emi * n;
+        const totalPayable = hasInterest ? (emi * n) : P;
         const totalInterest = Math.max(0, totalPayable - P);
         const remaining = Math.max(0, totalPayable - paidAmt);
 
         document.getElementById('webPreviewTotalPayable').innerText = `₹${totalPayable.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
-        document.getElementById('webPreviewTotalInterest').innerText = `₹${totalInterest.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
+        
+        const interestRow = document.getElementById('webPreviewInterestRow');
+        if (hasInterest && totalInterest > 0) {
+          if (interestRow) interestRow.style.display = 'flex';
+          document.getElementById('webPreviewTotalInterest').innerText = `₹${totalInterest.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
+        } else {
+          if (interestRow) interestRow.style.display = 'none';
+        }
+
         document.getElementById('webPreviewPaid').innerText = `₹${paidAmt.toLocaleString('en-IN', { minimumFractionDigits: 0 })} (${paidEmis}/${n} EMIs)`;
         document.getElementById('webPreviewRemaining').innerText = `₹${remaining.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
       } else {
@@ -2874,12 +2968,27 @@
       document.getElementById('loanLender').value = '';
       document.getElementById('loanAmount').value = '';
       document.getElementById('loanRate').value = '10.5';
-      document.getElementById('loanTenure').value = '12';
+      document.getElementById('loanTenure').value = '';
       document.getElementById('loanEmi').value = '';
       document.getElementById('loanDueDay').value = '5';
       document.getElementById('loanPaidEmis').value = '0';
       document.getElementById('loanPaidAmount').value = '0';
-      setWebLoanMode('reducing');
+      
+      const intSwitch = document.getElementById('loanInterestSwitch');
+      if (intSwitch) intSwitch.checked = false;
+      const intArea = document.getElementById('loanInterestOptionsArea');
+      if (intArea) intArea.style.display = 'none';
+      const intRow = document.getElementById('webPreviewInterestRow');
+      if (intRow) intRow.style.display = 'none';
+      
+      const moreSwitch = document.getElementById('loanMoreOptionsSwitch');
+      if (moreSwitch) moreSwitch.checked = false;
+      const moreArea = document.getElementById('loanMoreOptionsArea');
+      if (moreArea) moreArea.style.display = 'none';
+
+      webLoanInterestMode = 'no_cost';
+      updateWebLoanPreview();
+
       const modal = document.getElementById('loanModal');
       modal.classList.add('open');
       modal.classList.add('active');
@@ -2896,16 +3005,26 @@
       const name = document.getElementById('loanName').value.trim();
       const lender = document.getElementById('loanLender').value.trim() || 'Direct Lender';
       const principal = parseFloat(document.getElementById('loanAmount').value) || 0;
-      const rate = webLoanInterestMode === 'no_cost' ? 0.0 : (parseFloat(document.getElementById('loanRate').value) || 0);
-      const tenure = parseInt(document.getElementById('loanTenure').value) || 1;
+      const intSwitch = document.getElementById('loanInterestSwitch');
+      const hasInterest = intSwitch && intSwitch.checked;
+      const rate = hasInterest ? (parseFloat(document.getElementById('loanRate').value) || 0) : 0.0;
       let emi = parseFloat(document.getElementById('loanEmi').value) || 0;
-      if (emi <= 0) {
-        emi = principal / tenure;
+      let tenure = parseInt(document.getElementById('loanTenure').value) || 0;
+
+      if (tenure <= 0 && emi > 0) {
+        tenure = Math.max(1, Math.round(principal / emi));
+      } else if (emi <= 0 && tenure > 0) {
+        emi = Math.round(principal / tenure);
+      } else if (tenure <= 0 && emi <= 0) {
+        tenure = 1;
+        emi = principal;
       }
+
+      const totalPayable = hasInterest ? (emi * tenure) : principal;
       const dueDay = parseInt(document.getElementById('loanDueDay').value) || 5;
-      const paidEmis = parseInt(document.getElementById('loanPaidEmis').value) || 0;
-      const paidAmount = parseFloat(document.getElementById('loanPaidAmount').value) || (paidEmis * emi);
-      const category = document.getElementById('loanCategory').value;
+      const paidAmount = parseFloat(document.getElementById('loanPaidAmount').value) || 0;
+      const paidEmis = parseInt(document.getElementById('loanPaidEmis').value) || (emi > 0 ? Math.round(paidAmount / emi) : 0);
+      const category = document.getElementById('loanCategory').value || 'Personal';
 
       const newLoan = {
         id: 'loan_' + Date.now(),
@@ -2916,11 +3035,11 @@
         tenureMonths: tenure,
         monthlyEmi: emi,
         paidEmis: Math.min(tenure, paidEmis),
-        paidAmount: Math.min(emi * tenure, paidAmount),
+        paidAmount: Math.min(totalPayable, paidAmount),
         dueDay: dueDay,
         category: category,
-        isClosed: paidEmis >= tenure,
-        interestType: webLoanInterestMode,
+        isClosed: paidAmount >= totalPayable || paidEmis >= tenure,
+        interestType: hasInterest ? webLoanInterestMode : 'no_cost',
         startDate: new Date().toISOString()
       };
 
@@ -2930,7 +3049,7 @@
       showToast(`Added loan "${name}" successfully!`, 'success');
 
       if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
-        syncWebWithCloud(true);
+        syncWebWithCloud(true, false);
       }
     }
 
@@ -2955,15 +3074,15 @@
       const now = new Date();
 
       tbody.innerHTML = loans.map(l => {
-        const totalPayable = l.monthlyEmi * l.tenureMonths;
-        const remainingAmount = Math.max(0, totalPayable - l.paidAmount);
+        const totalPayable = getLoanTotalPayable(l);
+        const remainingAmount = getLoanRemaining(l);
         const remainingEmis = Math.max(0, l.tenureMonths - l.paidEmis);
-        const pct = Math.min(100, Math.round((l.paidAmount / totalPayable) * 100));
+        const pct = totalPayable > 0 ? Math.min(100, Math.round((l.paidAmount / totalPayable) * 100)) : 100;
 
         let statusText = `Every ${formatDayOrdinal(l.dueDay)}`;
         let statusColor = 'var(--text-muted)';
 
-        if (l.isClosed || remainingEmis === 0) {
+        if (l.isClosed || remainingEmis === 0 || remainingAmount <= 0) {
           statusText = 'Fully Paid 🎉';
           statusColor = 'var(--primary)';
         } else if (l.lastPaymentDate) {
@@ -2974,6 +3093,8 @@
           }
         }
 
+        const hasInterest = (parseFloat(l.interestRate) > 0 && l.interestType !== 'no_cost');
+
         return `
           <tr>
             <td>
@@ -2982,16 +3103,16 @@
             </td>
             <td><strong style="color: #93C5FD;">${escapeHtml(l.lender)}</strong></td>
             <td>
-              <div>₹${l.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</div>
-              <span style="font-size: 11px; color: var(--text-dim);">${l.interestRate > 0 ? l.interestRate + '% p.a.' : '0% No-Cost EMI'}</span>
+              <div>₹${(parseFloat(l.totalAmount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}</div>
+              <span style="font-size: 11px; color: var(--text-dim);">${hasInterest ? l.interestRate + '% p.a.' : '0% No-Cost EMI'}</span>
             </td>
             <td>
-              <strong style="color: var(--primary); font-size: 15px;">₹${l.monthlyEmi.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</strong>
+              <strong style="color: var(--primary); font-size: 15px;">₹${(parseFloat(l.monthlyEmi) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}</strong>
               <div style="font-size: 11px; color: var(--text-dim);">per month</div>
             </td>
             <td style="min-width: 160px;">
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                <span style="font-weight: 600;">${l.paidEmis} / ${l.tenureMonths} EMIs</span>
+                <span style="font-weight: 600;">${l.paidEmis || 0} / ${l.tenureMonths} EMIs</span>
                 <span style="color: ${pct === 100 ? 'var(--primary)' : 'var(--text-muted)'};">${pct}%</span>
               </div>
               <div class="progress-bar-bg" style="height: 6px; margin-bottom: 4px;">
@@ -3003,7 +3124,7 @@
               <i class="fa-regular fa-calendar" style="margin-right: 4px;"></i>${statusText}
             </td>
             <td>
-              ${!l.isClosed ? `
+              ${(!l.isClosed && remainingAmount > 0) ? `
                 <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px; background: rgba(16, 185, 129, 0.15); border-color: var(--primary); color: var(--primary);" onclick="payLoanEmi('${l.id}')" title="Record Monthly EMI payment">
                   <i class="fa-solid fa-check"></i> Pay EMI
                 </button>
@@ -3023,12 +3144,13 @@
       const loan = loans.find(l => l.id === id);
       if (!loan || loan.isClosed) return;
 
+      const totalPayable = getLoanTotalPayable(loan);
       const newPaidCount = Math.min(loan.tenureMonths, (loan.paidEmis || 0) + 1);
       loan.paidEmis = newPaidCount;
-      loan.paidAmount = Math.min(loan.monthlyEmi * loan.tenureMonths, (loan.paidAmount || 0) + loan.monthlyEmi);
+      loan.paidAmount = Math.min(totalPayable, (loan.paidAmount || 0) + loan.monthlyEmi);
       loan.lastPaymentDate = new Date().toISOString();
 
-      if (loan.paidEmis >= loan.tenureMonths) {
+      if (loan.paidEmis >= loan.tenureMonths || loan.paidAmount >= totalPayable) {
         loan.isClosed = true;
       }
 

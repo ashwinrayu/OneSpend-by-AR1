@@ -20,3 +20,4 @@ router.delete('/:id', deleteSubscription);
 router.post('/sync', syncSubscriptions);
 
 export default router;
+

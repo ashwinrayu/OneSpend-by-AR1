@@ -273,4 +273,26 @@ void main() {
     expect(restored.dueDay, 5);
     expect(restored.isClosed, false);
   });
+
+  test('User scenario: 50k loan with 5k emi and 5k paid produces exactly 45k remaining', () {
+    final loan = LoanItem(
+      id: 'loan_user_case',
+      name: 'Personal Loan',
+      lender: 'Direct',
+      totalAmount: 50000.0,
+      interestRate: 0.0,
+      tenureMonths: 10,
+      monthlyEmi: 5000.0,
+      paidEmis: 1,
+      paidAmount: 5000.0,
+      startDate: DateTime(2026, 11, 1),
+      dueDay: 5,
+      interestType: 'no_cost',
+    );
+
+    expect(loan.totalPayable, 50000.0);
+    expect(loan.remainingAmount, 45000.0);
+    expect(loan.remainingEmis, 9);
+    expect(loan.progressPercentage, 0.1);
+  });
 }
