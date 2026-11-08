@@ -126,66 +126,71 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
 
     state = state.copyWith(state: SyncState.syncing, errorMessage: null);
 
+    bool anySuccess = false;
+    String? lastFailureMessage;
+    DateTime? updatedSyncTime;
+
     try {
       final repo = ref.read(expenseRepositoryProvider);
       final api = ref.read(apiClientProvider);
+      final prefs = await SharedPreferences.getInstance();
 
       // 1. Fetch pending changes from SQLite
       final pendingItems = await repo.getPendingSyncTransactions();
       final pendingCount = pendingItems.length;
-
       state = state.copyWith(pendingCount: pendingCount);
 
-      // 2. Format client changes for backend API
-      final clientChanges = pendingItems.map((item) {
-        return {
-          'id': item.id,
-          'title': item.title,
-          'amount': item.amount,
-          'type': item.type.name,
-          'category': item.category,
-          'paymentMethod': item.paymentMethod.displayName,
-          'timestamp': item.timestamp.toIso8601String(),
-          'notes': item.notes,
-          'isDeleted': item.isDeleted,
-        };
-      }).toList();
+      // ==========================================
+      // A. SYNC TRANSACTIONS
+      // ==========================================
+      try {
+        final clientChanges = pendingItems.map((item) {
+          return {
+            'id': item.id,
+            'title': item.title,
+            'amount': item.amount,
+            'type': item.type.name,
+            'category': item.category,
+            'paymentMethod': item.paymentMethod.displayName,
+            'timestamp': item.timestamp.toIso8601String(),
+            'notes': item.notes,
+            'isDeleted': item.isDeleted,
+          };
+        }).toList();
 
-      // 3. Read lastSyncedAt from preferences
-      final prefs = await SharedPreferences.getInstance();
-      final lastSyncedAt = prefs.getString(_lastSyncedKey);
+        final lastSyncedAt = prefs.getString(_lastSyncedKey);
+        final response = await api.syncTransactions(
+          token: auth.token!,
+          clientChanges: clientChanges,
+          lastSyncedAt: lastSyncedAt,
+        );
 
-      // 4. Send delta-sync request to Render backend
-      final response = await api.syncTransactions(
-        token: auth.token!,
-        clientChanges: clientChanges,
-        lastSyncedAt: lastSyncedAt,
-      );
+        final serverChanges = (response['serverChanges'] as List<dynamic>?) ?? [];
+        if (serverChanges.isNotEmpty) {
+          await repo.mergeServerTransactions(serverChanges);
+        }
 
-      // 5. Merge server changes into local SQLite
-      final serverChanges = (response['serverChanges'] as List<dynamic>?) ?? [];
-      if (serverChanges.isNotEmpty) {
-        await repo.mergeServerTransactions(serverChanges);
+        if (pendingItems.isNotEmpty) {
+          final pendingIds = pendingItems.map((e) => e.id).toList();
+          await repo.markTransactionsAsSynced(pendingIds);
+        }
+
+        final syncedAtStr = response['syncedAt'] as String?;
+        if (syncedAtStr != null) {
+          await prefs.setString(_lastSyncedKey, syncedAtStr);
+          updatedSyncTime = DateTime.tryParse(syncedAtStr);
+        }
+
+        await ref.read(transactionListProvider.notifier).fetchTransactions();
+        anySuccess = true;
+      } catch (txErr) {
+        lastFailureMessage = txErr.toString().replaceFirst('Exception: ', '');
+        debugPrint('Transaction cloud sync notice: $txErr');
       }
 
-      // 6. Mark pending items as synced in SQLite
-      if (pendingItems.isNotEmpty) {
-        final pendingIds = pendingItems.map((e) => e.id).toList();
-        await repo.markTransactionsAsSynced(pendingIds);
-      }
-
-      // 7. Update last synced timestamp
-      final syncedAtStr = response['syncedAt'] as String?;
-      DateTime? newSyncedAt;
-      if (syncedAtStr != null) {
-        await prefs.setString(_lastSyncedKey, syncedAtStr);
-        newSyncedAt = DateTime.tryParse(syncedAtStr);
-      }
-
-      // 8. Refresh transaction provider to reflect any merged server data
-      await ref.read(transactionListProvider.notifier).fetchTransactions();
-
-      // 9. Sync Loans with Render Cloud
+      // ==========================================
+      // B. SYNC LOANS
+      // ==========================================
       try {
         final pendingLoans = await repo.getPendingSyncLoans();
         final clientLoanChanges = pendingLoans.map((l) {
@@ -232,13 +237,17 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
         final loanSyncedAtStr = loanResponse['syncedAt'] as String?;
         if (loanSyncedAtStr != null) {
           await prefs.setString(_lastLoanSyncedKey, loanSyncedAtStr);
+          updatedSyncTime ??= DateTime.tryParse(loanSyncedAtStr);
         }
+        anySuccess = true;
       } catch (loanErr) {
-        // Non-blocking for transactions sync
+        lastFailureMessage ??= loanErr.toString().replaceFirst('Exception: ', '');
         debugPrint('Loan cloud sync notice: $loanErr');
       }
 
-      // 10. Sync Subscriptions with Render Cloud
+      // ==========================================
+      // C. SYNC SUBSCRIPTIONS
+      // ==========================================
       try {
         final pendingSubs = await repo.getPendingSyncSubscriptions();
         final clientSubChanges = pendingSubs.map((s) {
@@ -276,17 +285,26 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
         final subSyncedAtStr = subResponse['syncedAt'] as String?;
         if (subSyncedAtStr != null) {
           await prefs.setString(_lastSubSyncedKey, subSyncedAtStr);
+          updatedSyncTime ??= DateTime.tryParse(subSyncedAtStr);
         }
+        anySuccess = true;
       } catch (subErr) {
-        // Non-blocking for primary sync
+        lastFailureMessage ??= subErr.toString().replaceFirst('Exception: ', '');
         debugPrint('Subscription cloud sync notice: $subErr');
       }
 
-      state = SyncStatus(
-        state: SyncState.synced,
-        lastSyncedAt: newSyncedAt ?? DateTime.now(),
-        pendingCount: 0,
-      );
+      if (anySuccess) {
+        state = SyncStatus(
+          state: SyncState.synced,
+          lastSyncedAt: updatedSyncTime ?? DateTime.now(),
+          pendingCount: 0,
+        );
+      } else {
+        state = state.copyWith(
+          state: SyncState.offline,
+          errorMessage: lastFailureMessage ?? 'Unable to sync with cloud. Offline mode active.',
+        );
+      }
     } on SocketException {
       state = state.copyWith(
         state: SyncState.offline,
