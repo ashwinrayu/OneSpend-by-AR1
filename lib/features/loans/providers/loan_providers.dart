@@ -118,3 +118,4 @@ final totalLoanPaidAmountProvider = Provider<double>((ref) {
     error: (_, __) => 0.0,
   );
 });
+

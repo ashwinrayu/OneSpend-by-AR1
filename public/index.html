@@ -278,6 +278,7 @@
     .metric-card.accent-danger::before { background-color: var(--danger); }
     .metric-card.accent-blue::before { background-color: var(--secondary); }
     .metric-card.accent-purple::before { background-color: #8B5CF6; }
+    .metric-card.accent-rose::before { background-color: #F43F5E; }
 
     .metric-header {
       display: flex;
@@ -695,12 +696,31 @@
           <i class="fa-solid fa-calendar-check"></i>
           <span>Subscriptions & Budgets</span>
         </a>
+        <a class="nav-item" onclick="switchTab('loans')">
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+          <span>Loans & EMI</span>
+          <span class="nav-badge" id="loanCountBadge" style="background: rgba(16, 185, 129, 0.15); color: var(--primary);">0</span>
+        </a>
         <a class="nav-item" onclick="switchTab('settings')">
           <i class="fa-solid fa-sliders"></i>
           <span>Settings & Backup</span>
         </a>
       </nav>
-      <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; margin-top: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">Android APK</span>
+          <span style="font-size: 10px; background: rgba(16, 185, 129, 0.2); color: var(--primary); padding: 2px 6px; border-radius: 99px; font-weight: 700;">v1.2.0</span>
+        </div>
+    <div class="mobile-nav-item" onclick="switchTab('loans')">
+      <i class="fa-solid fa-hand-holding-dollar"></i>
+      <span>Loans</span>
+    </div>
+        <p style="font-size: 11px; color: var(--text-muted); line-height: 1.3;">Offline-first vault with biometric lock & cloud delta sync.</p>
+        <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.0/app-release.apk" class="btn btn-secondary" style="font-size: 11px; padding: 7px 10px; width: 100%; justify-content: center; text-decoration: none;" download>
+          <i class="fa-brands fa-android" style="color: #10B981;"></i> Download APK (66MB)
+        </a>
+      </div>
+      <div style="padding-top: 8px; border-top: 1px solid var(--border-subtle);">
         <button class="btn btn-primary" style="width: 100%;" onclick="openAddTxModal()">
           <i class="fa-solid fa-plus"></i> Add Expense
         </button>
@@ -732,6 +752,10 @@
           <input type="text" id="globalSearch" placeholder="Search transactions, notes, payees..." oninput="handleSearch()">
         </div>
         <div class="header-actions">
+          <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.0/app-release.apk" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 12px; padding: 7px 12px;" download title="Download Android Release APK">
+            <i class="fa-brands fa-android" style="font-size: 14px;"></i>
+            <span>Download App <span style="background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 2px;">v1.2.0</span></span>
+          </a>
           <div id="authHeaderArea"></div>
           <div class="sync-status" onclick="syncWebWithCloud(false)" style="cursor: pointer;" title="Click to sync with Cloud">
             <div class="sync-dot"></div>
@@ -789,6 +813,17 @@
               </div>
               <div class="metric-value" id="savingsRateDisplay">0%</div>
               <div class="metric-sub" id="netSavingsDisplay">Net: +₹0.00</div>
+            </div>
+
+            <div class="metric-card accent-rose" onclick="switchTab('loans')" style="cursor: pointer;" title="View Loans & EMI Tracker">
+              <div class="metric-header">
+                <span class="metric-title">ACTIVE LOAN DEBT</span>
+                <div class="metric-icon" style="background: rgba(244, 63, 94, 0.15); color: #F43F5E;">
+                  <i class="fa-solid fa-hand-holding-dollar"></i>
+                </div>
+              </div>
+              <div class="metric-value" id="loanDebtDisplay" style="color: #F43F5E;">₹0.00</div>
+              <div class="metric-sub" id="loanEmiDisplay">₹0.00 monthly EMI burden</div>
             </div>
           </div>
 
@@ -929,6 +964,58 @@
           </div>
         </div>
 
+        <!-- 4.5. LOANS & EMI VIEW -->
+        <div id="view-loans" class="tab-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; text-align: center; padding: 12px 0;">
+              <div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Total Outstanding Debt</div>
+                <div id="loanTotalOutstandingBanner" style="font-size: 22px; font-weight: 800; color: #F43F5E;">₹0.00</div>
+              </div>
+              <div style="border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle);">
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Monthly EMI Burden</div>
+                <div id="loanMonthlyEmiBanner" style="font-size: 22px; font-weight: 800; color: var(--primary);">₹0.00</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Paid to Date</div>
+                <div id="loanPaidToDateBanner" style="font-size: 22px; font-weight: 800; color: var(--text-main);">₹0.00</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-header">
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="switchTab('dashboard')" style="display: inline-flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+                </button>
+                <span class="section-title">Loans & Monthly EMI Plans</span>
+              </div>
+              <button class="btn btn-primary" onclick="openAddLoanModal()">
+                <i class="fa-solid fa-plus"></i> Add Loan / EMI
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table id="loansTable">
+                <thead>
+                  <tr>
+                    <th>Loan / Plan</th>
+                    <th>Lender</th>
+                    <th>Principal & Rate</th>
+                    <th>Monthly EMI</th>
+                    <th>Progress & Balance</th>
+                    <th>Due Day</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="loansBody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- 5. SETTINGS & BACKUP VIEW -->
         <div id="view-settings" class="tab-view">
           <div style="margin-bottom: 16px;">
@@ -1005,6 +1092,73 @@
   <button class="mobile-fab" onclick="openAddTxModal()" title="Add Transaction">
     <i class="fa-solid fa-plus"></i>
   </button>
+
+  <!-- MODAL: ADD LOAN / EMI -->
+  <div class="modal-backdrop" id="loanModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-hand-holding-dollar" style="color: var(--primary); margin-right: 8px;"></i>Add Loan & EMI Plan</h3>
+        <button class="modal-close" onclick="closeLoanModal()">&times;</button>
+      </div>
+      <form onsubmit="handleLoanSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Loan / Plan Name</label>
+            <input type="text" id="loanName" class="form-control" placeholder="e.g. MacBook Pro M3, Car Loan, Home Loan" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lender / Financial Institution</label>
+            <input type="text" id="loanLender" class="form-control" placeholder="e.g. HDFC Bank, SBI, Bajaj Finserv" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Principal Amount (₹)</label>
+              <input type="number" id="loanAmount" class="form-control" placeholder="e.g. 60000" step="0.01" required oninput="autoCalcModalEmi()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Interest Rate (% p.a.)</label>
+              <input type="number" id="loanRate" class="form-control" placeholder="0 for No-Cost EMI" step="0.1" value="0" oninput="autoCalcModalEmi()">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Tenure (Months)</label>
+              <input type="number" id="loanTenure" class="form-control" placeholder="e.g. 12" min="1" max="360" value="12" required oninput="autoCalcModalEmi()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monthly EMI (₹)</label>
+              <input type="number" id="loanEmi" class="form-control" placeholder="Auto-calculated" step="0.01" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Due Day of Month (1-28)</label>
+              <input type="number" id="loanDueDay" class="form-control" placeholder="5" min="1" max="28" value="5" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Installments Paid So Far</label>
+              <input type="number" id="loanPaidEmis" class="form-control" placeholder="0" min="0" value="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="loanCategory" class="form-control">
+              <option value="Gadgets">Gadgets & Electronics</option>
+              <option value="Vehicle">Vehicle / Auto</option>
+              <option value="Housing">Housing / Home</option>
+              <option value="Education">Education</option>
+              <option value="Personal">Personal Loan</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeLoanModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Loan Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
@@ -1185,6 +1339,7 @@
     // State Store with LocalStorage Persistence (v3 starts pristine in production)
     const STORAGE_KEY_TX = 'onespend_transactions_v3';
     const STORAGE_KEY_SUBS = 'onespend_subscriptions_v3';
+    const STORAGE_KEY_LOANS = 'onespend_loans_v1';
 
     // Production build starts with a pristine, 100% clean vault
     const defaultTransactions = [];
@@ -1192,12 +1347,14 @@
 
     let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY_TX)) || defaultTransactions;
     let subscriptions = JSON.parse(localStorage.getItem(STORAGE_KEY_SUBS)) || defaultSubscriptions;
+    let loans = JSON.parse(localStorage.getItem(STORAGE_KEY_LOANS)) || [];
     let currentFilterCategory = 'All';
     let searchQuery = '';
 
     function persistData() {
       localStorage.setItem(STORAGE_KEY_TX, JSON.stringify(transactions));
       localStorage.setItem(STORAGE_KEY_SUBS, JSON.stringify(subscriptions));
+      localStorage.setItem(STORAGE_KEY_LOANS, JSON.stringify(loans));
       renderAll();
     }
 
@@ -1209,7 +1366,7 @@
       const activeView = document.getElementById('view-' + tabName);
       if (activeView) activeView.classList.add('active');
 
-      const tabs = ['dashboard', 'transactions', 'analytics', 'budgets', 'settings'];
+      const tabs = ['dashboard', 'transactions', 'analytics', 'budgets', 'loans', 'settings'];
       const index = tabs.indexOf(tabName);
       if (index >= 0) {
         const desktopItems = document.querySelectorAll('.nav-item');
@@ -1251,6 +1408,8 @@
       renderRecentTransactions();
       renderFullTransactions();
       renderSubscriptions();
+      renderLoans();
+      document.getElementById('loanCountBadge').innerText = loans.length;
       renderAnalytics();
       document.getElementById('txCountBadge').innerText = transactions.length;
     }
@@ -1279,6 +1438,30 @@
       document.getElementById('totalIncomeDisplay').innerText = `₹${totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
       document.getElementById('subTotalDisplay').innerText = `₹${subTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
       document.getElementById('subCountDisplay').innerText = `${subscriptions.length} active recurring services`;
+      let totalLoanDebt = 0;
+      let totalMonthlyEmi = 0;
+      let totalLoanPaid = 0;
+      loans.forEach(l => {
+        const totalPayable = (parseFloat(l.monthlyEmi) || 0) * (parseInt(l.tenureMonths) || 1);
+        const paidAmount = parseFloat(l.paidAmount) || 0;
+        const remaining = Math.max(0, totalPayable - paidAmount);
+        if (!l.isClosed) {
+          totalLoanDebt += remaining;
+          totalMonthlyEmi += (parseFloat(l.monthlyEmi) || 0);
+        }
+        totalLoanPaid += paidAmount;
+      });
+      const elDebt = document.getElementById('loanDebtDisplay');
+      if (elDebt) elDebt.innerText = `₹${totalLoanDebt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      const elEmi = document.getElementById('loanEmiDisplay');
+      if (elEmi) elEmi.innerText = `₹${totalMonthlyEmi.toLocaleString('en-IN', { minimumFractionDigits: 0 })} monthly EMI burden`;
+      const elBannerDebt = document.getElementById('loanTotalOutstandingBanner');
+      if (elBannerDebt) elBannerDebt.innerText = `₹${totalLoanDebt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      const elBannerEmi = document.getElementById('loanMonthlyEmiBanner');
+      if (elBannerEmi) elBannerEmi.innerText = `₹${totalMonthlyEmi.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      const elBannerPaid = document.getElementById('loanPaidToDateBanner');
+      if (elBannerPaid) elBannerPaid.innerText = `₹${totalLoanPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
       document.getElementById('savingsRateDisplay').innerText = `${savingsRate}%`;
       document.getElementById('netSavingsDisplay').innerText = `Net: ${netSavings >= 0 ? '+' : '-'}₹${Math.abs(netSavings).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
       document.getElementById('budgetRemainingSub').innerText = `Remaining budget: ₹${Math.max(0, overallBudget - totalExpense).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
@@ -1999,6 +2182,175 @@
         syncWebWithCloud(true);
       }
     }, 60000);
-  </script>
+  
+    // ==========================================
+    // LOANS & EMI PLAN METHODS
+    // ==========================================
+    function autoCalcModalEmi() {
+      const P = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const rate = parseFloat(document.getElementById('loanRate').value) || 0;
+      const n = parseInt(document.getElementById('loanTenure').value) || 1;
+      let emi = 0;
+      if (n > 0 && P > 0) {
+        if (rate <= 0) {
+          emi = P / n;
+        } else {
+          const r = (rate / 12) / 100;
+          emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        }
+      }
+      document.getElementById('loanEmi').value = emi > 0 ? emi.toFixed(2) : '';
+    }
+
+    function openAddLoanModal() {
+      document.getElementById('loanName').value = '';
+      document.getElementById('loanLender').value = '';
+      document.getElementById('loanAmount').value = '';
+      document.getElementById('loanRate').value = '0';
+      document.getElementById('loanTenure').value = '12';
+      document.getElementById('loanEmi').value = '';
+      document.getElementById('loanDueDay').value = '5';
+      document.getElementById('loanPaidEmis').value = '0';
+      document.getElementById('loanModal').classList.add('active');
+    }
+
+    function closeLoanModal() {
+      document.getElementById('loanModal').classList.remove('active');
+    }
+
+    function handleLoanSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('loanName').value.trim();
+      const lender = document.getElementById('loanLender').value.trim();
+      const principal = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const rate = parseFloat(document.getElementById('loanRate').value) || 0;
+      const tenure = parseInt(document.getElementById('loanTenure').value) || 1;
+      let emi = parseFloat(document.getElementById('loanEmi').value) || 0;
+      if (emi <= 0) {
+        emi = rate <= 0 ? principal / tenure : (principal * (rate/12/100) * Math.pow(1+rate/12/100, tenure)) / (Math.pow(1+rate/12/100, tenure) - 1);
+      }
+      const dueDay = parseInt(document.getElementById('loanDueDay').value) || 5;
+      const paidEmis = parseInt(document.getElementById('loanPaidEmis').value) || 0;
+      const category = document.getElementById('loanCategory').value;
+
+      const newLoan = {
+        id: 'loan_' + Date.now(),
+        name,
+        lender,
+        totalAmount: principal,
+        interestRate: rate,
+        tenureMonths: tenure,
+        monthlyEmi: emi,
+        paidEmis: paidEmis,
+        paidAmount: paidEmis * emi,
+        dueDay: dueDay,
+        category: category,
+        isClosed: paidEmis >= tenure,
+        startDate: new Date().toISOString()
+      };
+
+      loans.push(newLoan);
+      persistData();
+      closeLoanModal();
+      showToast(`Added loan "${name}" successfully!`, 'success');
+    }
+
+    function renderLoans() {
+      const tbody = document.getElementById('loansBody');
+      if (!tbody) return;
+      if (loans.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fa-solid fa-hand-holding-dollar"></i><p style="font-weight:600;margin-bottom:4px;">No loans or EMIs added</p><span style="font-size:12px;color:var(--text-dim);">Track Home Loan, Car Loan, or Gadget No-Cost EMIs</span></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = loans.map(l => {
+        const totalPayable = l.monthlyEmi * l.tenureMonths;
+        const remainingAmount = Math.max(0, totalPayable - l.paidAmount);
+        const remainingEmis = Math.max(0, l.tenureMonths - l.paidEmis);
+        const pct = Math.min(100, Math.round((l.paidAmount / totalPayable) * 100));
+
+        let statusText = l.isClosed ? 'Fully Paid 🎉' : `Due on Day ${l.dueDay}`;
+        let statusColor = l.isClosed ? 'var(--primary)' : 'var(--text-muted)';
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: var(--text-main); font-size: 14px;">${escapeHtml(l.name)}</div>
+              <span style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">${escapeHtml(l.category)}</span>
+            </td>
+            <td><strong style="color: #93C5FD;">${escapeHtml(l.lender)}</strong></td>
+            <td>
+              <div>₹${l.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</div>
+              <span style="font-size: 11px; color: var(--text-dim);">${l.interestRate > 0 ? l.interestRate + '% p.a.' : '0% No-Cost EMI'}</span>
+            </td>
+            <td>
+              <strong style="color: var(--primary); font-size: 15px;">₹${l.monthlyEmi.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+              <div style="font-size: 11px; color: var(--text-dim);">per month</div>
+            </td>
+            <td style="min-width: 160px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                <span style="font-weight: 600;">${l.paidEmis} / ${l.tenureMonths} EMIs</span>
+                <span style="color: ${pct === 100 ? 'var(--primary)' : 'var(--text-muted)'};">${pct}%</span>
+              </div>
+              <div class="progress-bar-bg" style="height: 6px; margin-bottom: 4px;">
+                <div class="progress-bar-fill" style="width: ${pct}%; background-color: ${pct === 100 ? 'var(--primary)' : '#3B82F6'};"></div>
+              </div>
+              <div style="font-size: 11px; color: #F43F5E;">Bal: ₹${remainingAmount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</div>
+            </td>
+            <td style="font-size: 12px; color: ${statusColor}; font-weight: 600;">
+              <i class="fa-regular fa-calendar" style="margin-right: 4px;"></i>${statusText}
+            </td>
+            <td>
+              ${!l.isClosed ? `
+                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px; background: rgba(16, 185, 129, 0.15); border-color: var(--primary); color: var(--primary);" onclick="payLoanEmi('${l.id}')" title="Record Monthly EMI payment">
+                  <i class="fa-solid fa-check"></i> Pay EMI
+                </button>
+              ` : `
+                <span style="font-size: 11px; color: var(--primary); font-weight: 700;">Completed</span>
+              `}
+              <button class="btn-icon delete" style="margin-left: 6px;" onclick="deleteLoan('${l.id}')" title="Delete Loan">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function payLoanEmi(id) {
+      const loan = loans.find(l => l.id === id);
+      if (!loan || loan.isClosed) return;
+
+      const newPaidCount = (loan.paidEmis || 0) + 1;
+      loan.paidEmis = newPaidCount;
+      loan.paidAmount = (loan.paidAmount || 0) + loan.monthlyEmi;
+      if (loan.paidEmis >= loan.tenureMonths) {
+        loan.isClosed = true;
+      }
+
+      // Automatically record expense transaction
+      const tx = {
+        id: 'tx_emi_' + Date.now(),
+        title: `EMI: ${loan.name} (${newPaidCount}/${loan.tenureMonths})`,
+        amount: loan.monthlyEmi,
+        type: 'Expense',
+        category: 'Housing',
+        paymentMethod: 'Bank Transfer',
+        date: new Date().toISOString().split('T')[0],
+        notes: `Monthly EMI payment to ${loan.lender}`
+      };
+      transactions.unshift(tx);
+
+      persistData();
+      showToast(`Recorded EMI payment of ₹${loan.monthlyEmi.toFixed(2)} for "${loan.name}"!`, 'success');
+    }
+
+    function deleteLoan(id) {
+      if (!confirm('Are you sure you want to remove this loan plan?')) return;
+      loans = loans.filter(l => l.id !== id);
+      persistData();
+      showToast('Loan plan removed.', 'info');
+    }
+</script>
 </body>
 </html>

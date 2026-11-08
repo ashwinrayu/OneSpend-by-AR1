@@ -555,3 +555,4 @@ class _AddEditLoanDialogState extends ConsumerState<AddEditLoanDialog> {
     );
   }
 }
+
