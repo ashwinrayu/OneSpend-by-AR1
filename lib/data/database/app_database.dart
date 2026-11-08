@@ -116,7 +116,9 @@ class AppDatabase {
         isClosed INTEGER NOT NULL DEFAULT 0,
         notes TEXT,
         interestType TEXT NOT NULL DEFAULT 'reducing',
-        lastPaymentDate INTEGER
+        lastPaymentDate INTEGER,
+        sync_status TEXT NOT NULL DEFAULT 'synced',
+        is_deleted INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -184,16 +186,27 @@ class AppDatabase {
             category TEXT NOT NULL,
             paymentMethod TEXT NOT NULL,
             isClosed INTEGER NOT NULL DEFAULT 0,
-            notes TEXT
+            notes TEXT,
+            interestType TEXT NOT NULL DEFAULT 'reducing',
+            lastPaymentDate INTEGER,
+            sync_status TEXT NOT NULL DEFAULT 'synced',
+            is_deleted INTEGER NOT NULL DEFAULT 0
           )
         ''');
       } catch (_) {}
+    }
     if (oldVersion < 6) {
       try {
         await db.execute("ALTER TABLE loans ADD COLUMN interestType TEXT NOT NULL DEFAULT 'reducing'");
       } catch (_) {}
       try {
         await db.execute("ALTER TABLE loans ADD COLUMN lastPaymentDate INTEGER");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE loans ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'synced'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE loans ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
       } catch (_) {}
     }
   }
@@ -203,13 +216,6 @@ class AppDatabase {
     if (db != null) {
       await db.close();
       _database = null;
-    if (oldVersion < 6) {
-      try {
-        await db.execute("ALTER TABLE loans ADD COLUMN interestType TEXT NOT NULL DEFAULT 'reducing'");
-      } catch (_) {}
-      try {
-        await db.execute("ALTER TABLE loans ADD COLUMN lastPaymentDate INTEGER");
-      } catch (_) {}
     }
   }
 }

@@ -70,6 +70,33 @@ export const initDb = async () => {
         CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
         CREATE INDEX IF NOT EXISTS idx_transactions_timestamp ON transactions(user_id, timestamp DESC);
         CREATE INDEX IF NOT EXISTS idx_transactions_updated ON transactions(user_id, updated_at DESC);
+
+        CREATE TABLE IF NOT EXISTS loans (
+            id VARCHAR(100) PRIMARY KEY,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name VARCHAR(255) NOT NULL,
+            lender VARCHAR(255) NOT NULL DEFAULT '',
+            total_amount NUMERIC(12, 2) NOT NULL,
+            interest_rate NUMERIC(6, 2) NOT NULL DEFAULT 0,
+            tenure_months INT NOT NULL,
+            monthly_emi NUMERIC(12, 2) NOT NULL,
+            paid_emis INT NOT NULL DEFAULT 0,
+            paid_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+            start_date TIMESTAMPTZ NOT NULL,
+            due_day INT NOT NULL DEFAULT 5,
+            category VARCHAR(100) NOT NULL DEFAULT 'Personal',
+            payment_method VARCHAR(50) NOT NULL DEFAULT 'Bank Transfer',
+            is_closed BOOLEAN NOT NULL DEFAULT FALSE,
+            notes TEXT,
+            interest_type VARCHAR(50) NOT NULL DEFAULT 'reducing',
+            last_payment_date TIMESTAMPTZ,
+            is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_loans_user ON loans(user_id);
+        CREATE INDEX IF NOT EXISTS idx_loans_updated ON loans(user_id, updated_at DESC);
       `);
       console.log('✅ PostgreSQL database schema verified and initialized.');
     } finally {

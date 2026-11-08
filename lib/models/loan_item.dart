@@ -18,6 +18,8 @@ class LoanItem {
   final String? notes;
   final String interestType; // 'reducing', 'flat', 'no_cost', 'custom'
   final DateTime? lastPaymentDate;
+  final String syncStatus; // 'synced' | 'pending'
+  final bool isDeleted;
 
   const LoanItem({
     required this.id,
@@ -37,6 +39,8 @@ class LoanItem {
     this.notes,
     this.interestType = 'reducing',
     this.lastPaymentDate,
+    this.syncStatus = 'pending',
+    this.isDeleted = false,
   });
 
   /// Flexible EMI calculation formula (Reducing, Flat, No-Cost)
@@ -145,6 +149,8 @@ class LoanItem {
       'notes': notes ?? '',
       'interestType': interestType,
       'lastPaymentDate': lastPaymentDate?.millisecondsSinceEpoch,
+      'sync_status': syncStatus,
+      'is_deleted': isDeleted ? 1 : 0,
     };
   }
 
@@ -169,6 +175,8 @@ class LoanItem {
       lastPaymentDate: map['lastPaymentDate'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['lastPaymentDate'] as int)
           : null,
+      syncStatus: (map['sync_status'] as String?) ?? 'synced',
+      isDeleted: (map['is_deleted'] as int?) == 1,
     );
   }
 
@@ -190,6 +198,8 @@ class LoanItem {
     String? notes,
     String? interestType,
     DateTime? lastPaymentDate,
+    String? syncStatus,
+    bool? isDeleted,
   }) {
     return LoanItem(
       id: id ?? this.id,
@@ -209,6 +219,8 @@ class LoanItem {
       notes: notes ?? this.notes,
       interestType: interestType ?? this.interestType,
       lastPaymentDate: lastPaymentDate ?? this.lastPaymentDate,
+      syncStatus: syncStatus ?? this.syncStatus,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 }

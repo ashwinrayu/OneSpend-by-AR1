@@ -106,5 +106,29 @@ class ApiClient {
       throw HttpException(data['error'] as String? ?? 'Sync failed.');
     }
   }
+
+  // Batch Delta Sync for Loans
+  Future<Map<String, dynamic>> syncLoans({
+    required String token,
+    required List<Map<String, dynamic>> clientChanges,
+    String? lastSyncedAt,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/loans/sync');
+    final response = await _client.post(
+      uri,
+      headers: _headers(token),
+      body: jsonEncode({
+        'lastSyncedAt': lastSyncedAt,
+        'clientChanges': clientChanges,
+      }),
+    ).timeout(const Duration(seconds: 25));
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      return data;
+    } else {
+      throw HttpException(data['error'] as String? ?? 'Loan sync failed.');
+    }
+  }
 }
 

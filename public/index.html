@@ -716,8 +716,8 @@
       <span>Loans</span>
     </div>
         <p style="font-size: 11px; color: var(--text-muted); line-height: 1.3;">Offline-first vault with biometric lock & cloud delta sync.</p>
-        <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.0/app-release.apk" class="btn btn-secondary" style="font-size: 11px; padding: 7px 10px; width: 100%; justify-content: center; text-decoration: none;" download>
-          <i class="fa-brands fa-android" style="color: #10B981;"></i> Download APK (66MB)
+        <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/latest/download/app-release.apk" class="btn btn-secondary" style="font-size: 11px; padding: 7px 10px; width: 100%; justify-content: center; text-decoration: none;" download>
+          <i class="fa-brands fa-android" style="color: #10B981;"></i> Download APK (v1.2.1)
         </a>
       </div>
       <div style="padding-top: 8px; border-top: 1px solid var(--border-subtle);">
@@ -752,9 +752,9 @@
           <input type="text" id="globalSearch" placeholder="Search transactions, notes, payees..." oninput="handleSearch()">
         </div>
         <div class="header-actions">
-          <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.0/app-release.apk" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 12px; padding: 7px 12px;" download title="Download Android Release APK">
+          <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/latest/download/app-release.apk" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 12px; padding: 7px 12px;" download title="Download Android Release APK">
             <i class="fa-brands fa-android" style="font-size: 14px;"></i>
-            <span>Download App <span style="background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 2px;">v1.2.0</span></span>
+            <span>Download App <span style="background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 2px;">v1.2.1</span></span>
           </a>
           <div id="authHeaderArea"></div>
           <div class="sync-status" onclick="syncWebWithCloud(false)" style="cursor: pointer;" title="Click to sync with Cloud">
@@ -1943,6 +1943,8 @@
     const STORAGE_KEY_TOKEN = 'onespend_auth_token';
     const STORAGE_KEY_USER = 'onespend_auth_user';
     const STORAGE_KEY_WEB_SYNC = 'onespend_web_last_synced_at';
+    const STORAGE_KEY_LOAN_SYNC = 'onespend_loan_last_synced_at';
+    const STORAGE_KEY_DELETED_LOANS = 'onespend_deleted_loans_v1';
     let isWebSyncing = false;
 
     function normalizeServerTransaction(s) {
@@ -1982,6 +1984,51 @@
       };
     }
 
+    function normalizeServerLoan(s) {
+      return {
+        id: String(s.id),
+        name: s.name || '',
+        lender: s.lender || '',
+        totalAmount: parseFloat(s.total_amount != null ? s.total_amount : s.totalAmount) || 0,
+        interestRate: parseFloat(s.interest_rate != null ? s.interest_rate : s.interestRate) || 0,
+        tenureMonths: parseInt(s.tenure_months != null ? s.tenure_months : s.tenureMonths) || 1,
+        monthlyEmi: parseFloat(s.monthly_emi != null ? s.monthly_emi : s.monthlyEmi) || 0,
+        paidEmis: parseInt(s.paid_emis != null ? s.paid_emis : s.paidEmis) || 0,
+        paidAmount: parseFloat(s.paid_amount != null ? s.paid_amount : s.paidAmount) || 0,
+        startDate: s.start_date || s.startDate || new Date().toISOString(),
+        dueDay: parseInt(s.due_day != null ? s.due_day : s.dueDay) || 5,
+        category: s.category || 'Personal',
+        paymentMethod: s.payment_method || s.paymentMethod || 'Bank Transfer',
+        isClosed: Boolean(s.is_closed != null ? s.is_closed : s.isClosed),
+        notes: s.notes || '',
+        interestType: s.interest_type || s.interestType || 'reducing',
+        lastPaymentDate: s.last_payment_date || s.lastPaymentDate || null
+      };
+    }
+
+    function normalizeClientLoan(l, isDeleted = false) {
+      return {
+        id: String(l.id),
+        name: l.name || '',
+        lender: l.lender || '',
+        totalAmount: parseFloat(l.totalAmount) || 0,
+        interestRate: parseFloat(l.interestRate) || 0,
+        tenureMonths: parseInt(l.tenureMonths) || 1,
+        monthlyEmi: parseFloat(l.monthlyEmi) || 0,
+        paidEmis: parseInt(l.paidEmis) || 0,
+        paidAmount: parseFloat(l.paidAmount) || 0,
+        startDate: l.startDate || new Date().toISOString(),
+        dueDay: parseInt(l.dueDay) || 5,
+        category: l.category || 'Personal',
+        paymentMethod: l.paymentMethod || 'Bank Transfer',
+        isClosed: Boolean(l.isClosed),
+        notes: l.notes || '',
+        interestType: l.interestType || 'reducing',
+        lastPaymentDate: l.lastPaymentDate || null,
+        isDeleted: Boolean(isDeleted)
+      };
+    }
+
     async function syncWebWithCloud(silent = false) {
       const token = localStorage.getItem(STORAGE_KEY_TOKEN);
       if (!token) return;
@@ -1991,10 +2038,11 @@
       updateSyncStatusUI('syncing');
 
       try {
+        // 1. Concurrent Transactions Delta-Sync
         const clientChanges = transactions.map(t => normalizeClientChange(t, false));
         const lastSyncedAt = localStorage.getItem(STORAGE_KEY_WEB_SYNC) || null;
 
-        const res = await fetch('https://onespend-by-ar1.onrender.com/api/transactions/sync', {
+        const txPromise = fetch('https://onespend-by-ar1.onrender.com/api/transactions/sync', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2006,14 +2054,44 @@
           })
         });
 
-        if (res.status === 401) {
+        // 2. Concurrent Loans Delta-Sync
+        const lastLoanSyncedAt = localStorage.getItem(STORAGE_KEY_LOAN_SYNC) || null;
+        let deletedLoanIds = [];
+        try {
+          deletedLoanIds = JSON.parse(localStorage.getItem(STORAGE_KEY_DELETED_LOANS)) || [];
+        } catch (_) {}
+
+        const clientLoanChanges = [
+          ...loans.map(l => normalizeClientLoan(l, false)),
+          ...deletedLoanIds.map(id => ({ id: String(id), isDeleted: true }))
+        ];
+
+        const loanPromise = fetch('https://onespend-by-ar1.onrender.com/api/loans/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            lastSyncedAt: lastLoanSyncedAt,
+            clientChanges: clientLoanChanges
+          })
+        });
+
+        const [txRes, loanRes] = await Promise.all([txPromise, loanPromise]);
+
+        if (txRes.status === 401 || loanRes.status === 401) {
           logoutWeb();
           showToast('Session expired. Please sign in again.', 'warning');
           return;
         }
 
-        const data = await res.json();
-        if (res.ok) {
+        let hasTxChanges = false;
+        let hasLoanChanges = false;
+
+        // Process Transactions Sync
+        if (txRes.ok) {
+          const data = await txRes.json();
           if (data.serverChanges && Array.isArray(data.serverChanges)) {
             const txMap = new Map();
             transactions.forEach(t => txMap.set(String(t.id), t));
@@ -2028,20 +2106,52 @@
 
             transactions = Array.from(txMap.values());
             transactions.sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp));
-            persistData();
+            hasTxChanges = true;
           }
 
           if (data.syncedAt) {
             localStorage.setItem(STORAGE_KEY_WEB_SYNC, data.syncedAt);
           }
+        }
 
+        // Process Loans Sync
+        if (loanRes.ok) {
+          const loanData = await loanRes.json();
+          if (loanData.serverChanges && Array.isArray(loanData.serverChanges)) {
+            const loanMap = new Map();
+            loans.forEach(l => loanMap.set(String(l.id), l));
+
+            loanData.serverChanges.forEach(sc => {
+              if (sc.is_deleted) {
+                loanMap.delete(String(sc.id));
+              } else {
+                loanMap.set(String(sc.id), normalizeServerLoan(sc));
+              }
+            });
+
+            loans = Array.from(loanMap.values());
+            hasLoanChanges = true;
+          }
+
+          localStorage.removeItem(STORAGE_KEY_DELETED_LOANS);
+
+          if (loanData.syncedAt) {
+            localStorage.setItem(STORAGE_KEY_LOAN_SYNC, loanData.syncedAt);
+          }
+        }
+
+        if (hasTxChanges || hasLoanChanges) {
+          persistData();
+        }
+
+        if (txRes.ok && loanRes.ok) {
           updateSyncStatusUI('synced');
           if (!silent) {
-            showToast('Cloud sync complete! Data synchronized with mobile.', 'success');
+            showToast('Cloud sync complete! Vault synchronized with mobile.', 'success');
           }
         } else {
           updateSyncStatusUI('error');
-          if (!silent) showToast(data.error || 'Sync encountered an issue.', 'error');
+          if (!silent) showToast('Sync encountered a warning.', 'warning');
         }
       } catch (err) {
         console.error('Web cloud sync failed:', err);
@@ -2221,6 +2331,8 @@
       localStorage.removeItem(STORAGE_KEY_TOKEN);
       localStorage.removeItem(STORAGE_KEY_USER);
       localStorage.removeItem(STORAGE_KEY_WEB_SYNC);
+      localStorage.removeItem(STORAGE_KEY_LOAN_SYNC);
+      localStorage.removeItem(STORAGE_KEY_DELETED_LOANS);
       renderAuthStatus();
       updateSyncStatusUI('offline');
       showToast('Signed out successfully. Running in offline Guest Mode.', 'info');
@@ -2437,6 +2549,10 @@
       persistData();
       closeLoanModal();
       showToast(`Added loan "${name}" successfully!`, 'success');
+
+      if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
+        syncWebWithCloud(true);
+      }
     }
 
     function formatDayOrdinal(day) {
@@ -2552,13 +2668,32 @@
 
       persistData();
       showToast(`Paid EMI of ₹${loan.monthlyEmi.toFixed(0)} for "${loan.name}"! Recorded in transactions.`, 'success');
+
+      if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
+        syncWebWithCloud(true);
+      }
     }
 
     function deleteLoan(id) {
       if (!confirm('Are you sure you want to remove this loan plan?')) return;
-      loans = loans.filter(l => l.id !== id);
+      const targetId = String(id);
+      loans = loans.filter(l => String(l.id) !== targetId);
+
+      let deletedLoans = [];
+      try {
+        deletedLoans = JSON.parse(localStorage.getItem(STORAGE_KEY_DELETED_LOANS)) || [];
+      } catch (_) {}
+      if (!deletedLoans.includes(targetId)) {
+        deletedLoans.push(targetId);
+        localStorage.setItem(STORAGE_KEY_DELETED_LOANS, JSON.stringify(deletedLoans));
+      }
+
       persistData();
       showToast('Loan plan removed.', 'info');
+
+      if (localStorage.getItem(STORAGE_KEY_TOKEN)) {
+        syncWebWithCloud(true);
+      }
     }
 
 </script>

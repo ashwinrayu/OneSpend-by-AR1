@@ -337,6 +337,7 @@ class ExpenseRepository {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
       'loans',
+      where: 'is_deleted = 0',
       orderBy: 'isClosed ASC, dueDay ASC',
     );
     return maps.map((map) => LoanItem.fromMap(map)).toList();
@@ -344,18 +345,20 @@ class ExpenseRepository {
 
   Future<void> insertLoan(LoanItem loan) async {
     final db = await _db;
+    final loanMap = loan.copyWith(syncStatus: 'pending', isDeleted: false).toMap();
     await db.insert(
       'loans',
-      loan.toMap(),
+      loanMap,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
   Future<void> updateLoan(LoanItem loan) async {
     final db = await _db;
+    final loanMap = loan.copyWith(syncStatus: 'pending').toMap();
     await db.update(
       'loans',
-      loan.toMap(),
+      loanMap,
       where: 'id = ?',
       whereArgs: [loan.id],
     );
@@ -363,11 +366,104 @@ class ExpenseRepository {
 
   Future<void> deleteLoan(String id) async {
     final db = await _db;
-    await db.delete(
+    // Mark as soft-deleted and pending sync for cloud propagation
+    await db.update(
       'loans',
+      {'is_deleted': 1, 'sync_status': 'pending'},
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<List<LoanItem>> getPendingSyncLoans() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'loans',
+      where: "sync_status = 'pending'",
+    );
+    return maps.map((map) => LoanItem.fromMap(map)).toList();
+  }
+
+  Future<void> markLoansAsSynced(List<String> ids) async {
+    if (ids.isEmpty) return;
+    final db = await _db;
+    final batch = db.batch();
+    for (final id in ids) {
+      batch.update(
+        'loans',
+        {'sync_status': 'synced'},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
+    // Hard-delete items that were marked is_deleted and are now successfully synced
+    await db.delete(
+      'loans',
+      where: "is_deleted = 1 AND sync_status = 'synced'",
+    );
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> mergeServerLoans(List<dynamic> serverChanges) async {
+    final db = await _db;
+    final batch = db.batch();
+
+    for (final raw in serverChanges) {
+      if (raw is! Map<String, dynamic>) continue;
+
+      final isDeleted = raw['is_deleted'] == true || raw['is_deleted'] == 1;
+      final id = raw['id'] as String;
+
+      if (isDeleted) {
+        batch.delete('loans', where: 'id = ?', whereArgs: [id]);
+      } else {
+        final startDateVal = raw['start_date'];
+        DateTime startDate = DateTime.now();
+        if (startDateVal is int) {
+          startDate = DateTime.fromMillisecondsSinceEpoch(startDateVal);
+        } else if (startDateVal is String) {
+          startDate = DateTime.tryParse(startDateVal) ?? DateTime.now();
+        }
+
+        final lastPaymentVal = raw['last_payment_date'];
+        DateTime? lastPaymentDate;
+        if (lastPaymentVal is int) {
+          lastPaymentDate = DateTime.fromMillisecondsSinceEpoch(lastPaymentVal);
+        } else if (lastPaymentVal is String) {
+          lastPaymentDate = DateTime.tryParse(lastPaymentVal);
+        }
+
+        final localMap = <String, dynamic>{
+          'id': id,
+          'name': raw['name'] as String? ?? 'Loan',
+          'lender': raw['lender'] as String? ?? '',
+          'totalAmount': (raw['total_amount'] as num?)?.toDouble() ?? 0.0,
+          'interestRate': (raw['interest_rate'] as num?)?.toDouble() ?? 0.0,
+          'tenureMonths': (raw['tenure_months'] as num?)?.toInt() ?? 1,
+          'monthlyEmi': (raw['monthly_emi'] as num?)?.toDouble() ?? 0.0,
+          'paidEmis': (raw['paid_emis'] as num?)?.toInt() ?? 0,
+          'paidAmount': (raw['paid_amount'] as num?)?.toDouble() ?? 0.0,
+          'startDate': startDate.millisecondsSinceEpoch,
+          'dueDay': (raw['due_day'] as num?)?.toInt() ?? 5,
+          'category': raw['category'] as String? ?? 'Personal',
+          'paymentMethod': raw['payment_method'] as String? ?? 'Bank Transfer',
+          'isClosed': (raw['is_closed'] == true || raw['is_closed'] == 1) ? 1 : 0,
+          'notes': raw['notes'] as String?,
+          'interestType': raw['interest_type'] as String? ?? 'reducing',
+          'lastPaymentDate': lastPaymentDate?.millisecondsSinceEpoch,
+          'sync_status': 'synced',
+          'is_deleted': 0,
+        };
+
+        batch.insert(
+          'loans',
+          localMap,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    }
+
+    await batch.commit(noResult: true);
   }
 
   Future<void> payLoanEmi(LoanItem loan, {PaymentMethod? method}) async {

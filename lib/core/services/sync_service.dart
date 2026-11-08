@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/repositories/expense_repository.dart';
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/loans/providers/loan_providers.dart';
 import '../../features/transactions/providers/transaction_providers.dart';
 import 'api_client.dart';
 
@@ -53,6 +54,7 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
   }
 
   static const String _lastSyncedKey = 'onespend_last_synced_at';
+  static const String _lastLoanSyncedKey = 'onespend_last_loan_synced_at';
 
   Future<void> _init() async {
     // Load last sync timestamp from preferences
@@ -179,6 +181,59 @@ class SyncNotifier extends StateNotifier<SyncStatus> {
 
       // 8. Refresh transaction provider to reflect any merged server data
       await ref.read(transactionListProvider.notifier).fetchTransactions();
+
+      // 9. Sync Loans with Render Cloud
+      try {
+        final pendingLoans = await repo.getPendingSyncLoans();
+        final clientLoanChanges = pendingLoans.map((l) {
+          return {
+            'id': l.id,
+            'name': l.name,
+            'lender': l.lender,
+            'totalAmount': l.totalAmount,
+            'interestRate': l.interestRate,
+            'tenureMonths': l.tenureMonths,
+            'monthlyEmi': l.monthlyEmi,
+            'paidEmis': l.paidEmis,
+            'paidAmount': l.paidAmount,
+            'startDate': l.startDate.toIso8601String(),
+            'dueDay': l.dueDay,
+            'category': l.category,
+            'paymentMethod': l.paymentMethod,
+            'isClosed': l.isClosed,
+            'notes': l.notes,
+            'interestType': l.interestType,
+            'lastPaymentDate': l.lastPaymentDate?.toIso8601String(),
+            'isDeleted': l.isDeleted,
+          };
+        }).toList();
+
+        final lastLoanSyncedAt = prefs.getString(_lastLoanSyncedKey);
+        final loanResponse = await api.syncLoans(
+          token: auth.token!,
+          clientChanges: clientLoanChanges,
+          lastSyncedAt: lastLoanSyncedAt,
+        );
+
+        final serverLoanChanges = (loanResponse['serverChanges'] as List<dynamic>?) ?? [];
+        if (serverLoanChanges.isNotEmpty) {
+          await repo.mergeServerLoans(serverLoanChanges);
+          ref.read(loansProvider.notifier).fetchLoans();
+        }
+
+        if (pendingLoans.isNotEmpty) {
+          final pendingLoanIds = pendingLoans.map((l) => l.id).toList();
+          await repo.markLoansAsSynced(pendingLoanIds);
+        }
+
+        final loanSyncedAtStr = loanResponse['syncedAt'] as String?;
+        if (loanSyncedAtStr != null) {
+          await prefs.setString(_lastLoanSyncedKey, loanSyncedAtStr);
+        }
+      } catch (loanErr) {
+        // Non-blocking for transactions sync
+        debugPrint('Loan cloud sync notice: $loanErr');
+      }
 
       state = SyncStatus(
         state: SyncState.synced,

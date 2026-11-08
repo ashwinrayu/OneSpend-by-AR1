@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
+import loanRoutes from './routes/loanRoutes.js';
 import { initDb } from './config/db.js';
 
 dotenv.config();
@@ -47,6 +48,7 @@ app.get('/api/app/version', (req, res) => {
 // Mount API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/loans', loanRoutes);
 
 // Root Welcome Endpoint
 app.get('/', (req, res) => {
