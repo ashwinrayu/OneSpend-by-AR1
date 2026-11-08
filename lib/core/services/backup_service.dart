@@ -35,14 +35,18 @@ class BackupService {
       final transactionsMap = await db.query('transactions');
       final categoriesMap = await db.query('categories');
       final budgetsMap = await db.query('budgets');
+      final subscriptionsMap = await db.query('subscriptions');
+      final loansMap = await db.query('loans');
 
       final backupPayload = {
-        'version': 1,
+        'version': 2,
         'app': 'OneSpend by AR1',
         'exportedAt': DateTime.now().toIso8601String(),
         'transactions': transactionsMap,
         'categories': categoriesMap,
         'budgets': budgetsMap,
+        'subscriptions': subscriptionsMap,
+        'loans': loansMap,
       };
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(backupPayload);
@@ -150,6 +154,8 @@ class BackupService {
       final transactionsList = data['transactions'] as List<dynamic>;
       final categoriesList = data['categories'] as List<dynamic>;
       final budgetsList = (data['budgets'] as List<dynamic>?) ?? [];
+      final subscriptionsList = (data['subscriptions'] as List<dynamic>?) ?? [];
+      final loansList = (data['loans'] as List<dynamic>?) ?? [];
 
       final db = await AppDatabase.instance.database;
 
@@ -158,6 +164,8 @@ class BackupService {
         await txn.delete('transactions');
         await txn.delete('categories');
         await txn.delete('budgets');
+        await txn.delete('subscriptions');
+        await txn.delete('loans');
 
         // Restore Categories
         final catBatch = txn.batch();
@@ -172,6 +180,24 @@ class BackupService {
           budgetBatch.insert('budgets', Map<String, dynamic>.from(item as Map));
         }
         await budgetBatch.commit(noResult: true);
+
+        // Restore Subscriptions (if any)
+        if (subscriptionsList.isNotEmpty) {
+          final subBatch = txn.batch();
+          for (final item in subscriptionsList) {
+            subBatch.insert('subscriptions', Map<String, dynamic>.from(item as Map));
+          }
+          await subBatch.commit(noResult: true);
+        }
+
+        // Restore Loans (if any)
+        if (loansList.isNotEmpty) {
+          final loanBatch = txn.batch();
+          for (final item in loansList) {
+            loanBatch.insert('loans', Map<String, dynamic>.from(item as Map));
+          }
+          await loanBatch.commit(noResult: true);
+        }
 
         // Restore Transactions
         final txBatch = txn.batch();
@@ -200,6 +226,7 @@ class BackupService {
     await db.transaction((txn) async {
       await txn.delete('transactions');
       await txn.delete('subscriptions');
+      await txn.delete('loans');
       await txn.delete('categories');
       await txn.delete('budgets');
 

@@ -6,6 +6,7 @@ import 'package:onespend/core/utils/formatters.dart';
 import 'package:onespend/features/transactions/providers/transaction_providers.dart';
 import 'package:onespend/models/budget_item.dart';
 import 'package:onespend/models/enums.dart';
+import 'package:onespend/models/loan_item.dart';
 import 'package:onespend/models/subscription_item.dart';
 import 'package:onespend/models/transaction_item.dart';
 
@@ -200,5 +201,65 @@ void main() {
     expect(metrics.safeDailySpend > 0, true);
     expect(metrics.healthScore >= 15 && metrics.healthScore <= 100, true);
     expect(metrics.isOverBudget, false);
+  });
+
+  test('LoanItem EMI calculation, progress and serialization test', () {
+    // 1. Zero percent (No-cost EMI) calculation
+    final zeroEmi = LoanItem.calculateEmi(
+      principal: 60000.0,
+      annualInterestRate: 0.0,
+      tenureMonths: 6,
+    );
+    expect(zeroEmi, 10000.0);
+
+    // 2. Standard interest EMI calculation: 100,000 at 12% p.a. for 12 months
+    // Formula: P * r * (1+r)^n / ((1+r)^n - 1)
+    // r = 0.01 per month
+    // EMI = 100000 * 0.01 * (1.01)^12 / ((1.01)^12 - 1) = ~8884.88
+    final standardEmi = LoanItem.calculateEmi(
+      principal: 100000.0,
+      annualInterestRate: 12.0,
+      tenureMonths: 12,
+    );
+    expect((standardEmi - 8884.88).abs() < 1.0, true);
+
+    // 3. LoanItem model properties and getters
+    final loan = LoanItem(
+      id: 'loan_test_1',
+      name: 'MacBook Pro EMI',
+      lender: 'HDFC Bank',
+      totalAmount: 120000.0,
+      interestRate: 0.0,
+      tenureMonths: 12,
+      monthlyEmi: 10000.0,
+      paidEmis: 4,
+      paidAmount: 40000.0,
+      startDate: DateTime(2026, 1, 1),
+      dueDay: 5,
+      category: 'Electronics',
+      paymentMethod: 'Credit Card',
+    );
+
+    expect(loan.remainingEmis, 8);
+    expect(loan.remainingAmount, 80000.0);
+    expect((loan.progressPercentage - (4 / 12)).abs() < 0.001, true);
+    expect(loan.isClosed, false);
+    expect(loan.totalPayable, 120000.0);
+
+    // 4. Serialization roundtrip
+    final map = loan.toMap();
+    final restored = LoanItem.fromMap(map);
+
+    expect(restored.id, loan.id);
+    expect(restored.name, loan.name);
+    expect(restored.lender, loan.lender);
+    expect(restored.totalAmount, loan.totalAmount);
+    expect(restored.interestRate, loan.interestRate);
+    expect(restored.tenureMonths, loan.tenureMonths);
+    expect(restored.monthlyEmi, loan.monthlyEmi);
+    expect(restored.paidEmis, 4);
+    expect(restored.paidAmount, 40000.0);
+    expect(restored.dueDay, 5);
+    expect(restored.isClosed, false);
   });
 }

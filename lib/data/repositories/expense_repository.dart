@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../models/budget_item.dart';
 import '../../models/category_item.dart';
 import '../../models/enums.dart';
+import '../../models/loan_item.dart';
 import '../../models/subscription_item.dart';
 import '../../models/transaction_item.dart';
 import '../database/app_database.dart';
@@ -329,5 +330,74 @@ class ExpenseRepository {
 
     final updated = sub.copyWith(nextBillingDate: nextDate);
     await updateSubscription(updated);
+  }
+
+  // Loans & EMI Tracking
+  Future<List<LoanItem>> getAllLoans() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'loans',
+      orderBy: 'isClosed ASC, dueDay ASC',
+    );
+    return maps.map((map) => LoanItem.fromMap(map)).toList();
+  }
+
+  Future<void> insertLoan(LoanItem loan) async {
+    final db = await _db;
+    await db.insert(
+      'loans',
+      loan.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateLoan(LoanItem loan) async {
+    final db = await _db;
+    await db.update(
+      'loans',
+      loan.toMap(),
+      where: 'id = ?',
+      whereArgs: [loan.id],
+    );
+  }
+
+  Future<void> deleteLoan(String id) async {
+    final db = await _db;
+    await db.delete(
+      'loans',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> payLoanEmi(LoanItem loan, {PaymentMethod? method}) async {
+    final db = await _db;
+    final now = DateTime.now();
+
+    final newPaidEmis = loan.paidEmis + 1;
+    final newPaidAmount = loan.paidAmount + loan.monthlyEmi;
+    final isNowClosed = newPaidEmis >= loan.tenureMonths;
+
+    // 1. Insert an Expense transaction for this EMI
+    final txItem = TransactionItem(
+      id: 'tx_emi_${loan.id}_${now.millisecondsSinceEpoch}',
+      title: 'EMI: ${loan.name} ($newPaidEmis/${loan.tenureMonths})',
+      amount: loan.monthlyEmi,
+      type: TransactionType.expense,
+      category: 'Loans & EMIs',
+      paymentMethod: method ?? PaymentMethod.fromString(loan.paymentMethod),
+      timestamp: now,
+      notes: 'Monthly EMI payment for ${loan.name} (${loan.lender})',
+      syncStatus: 'pending',
+    );
+    await insertTransaction(txItem);
+
+    // 2. Update the loan progress
+    final updatedLoan = loan.copyWith(
+      paidEmis: newPaidEmis,
+      paidAmount: newPaidAmount,
+      isClosed: isNowClosed,
+    );
+    await updateLoan(updatedLoan);
   }
 }

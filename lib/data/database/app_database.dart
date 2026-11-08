@@ -44,7 +44,7 @@ class AppDatabase {
 
     return await openDatabase(
       dbPath,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -98,6 +98,26 @@ class AppDatabase {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS loans (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        lender TEXT NOT NULL,
+        totalAmount REAL NOT NULL,
+        interestRate REAL NOT NULL,
+        tenureMonths INTEGER NOT NULL,
+        monthlyEmi REAL NOT NULL,
+        paidEmis INTEGER NOT NULL DEFAULT 0,
+        paidAmount REAL NOT NULL DEFAULT 0.0,
+        startDate INTEGER NOT NULL,
+        dueDay INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        paymentMethod TEXT NOT NULL,
+        isClosed INTEGER NOT NULL DEFAULT 0,
+        notes TEXT
+      )
+    ''');
+
     // Seed default categories for selection
     final batch = db.batch();
     for (final cat in MockData.defaultCategories) {
@@ -142,6 +162,29 @@ class AppDatabase {
         // Clean legacy mock/sample transactions and subscriptions for pristine production state
         await db.delete('transactions', where: "id LIKE 'tx_%'");
         await db.delete('subscriptions', where: "id LIKE 'sub_%'");
+      } catch (_) {}
+    }
+    if (oldVersion < 5) {
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS loans (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            lender TEXT NOT NULL,
+            totalAmount REAL NOT NULL,
+            interestRate REAL NOT NULL,
+            tenureMonths INTEGER NOT NULL,
+            monthlyEmi REAL NOT NULL,
+            paidEmis INTEGER NOT NULL DEFAULT 0,
+            paidAmount REAL NOT NULL DEFAULT 0.0,
+            startDate INTEGER NOT NULL,
+            dueDay INTEGER NOT NULL,
+            category TEXT NOT NULL,
+            paymentMethod TEXT NOT NULL,
+            isClosed INTEGER NOT NULL DEFAULT 0,
+            notes TEXT
+          )
+        ''');
       } catch (_) {}
     }
   }

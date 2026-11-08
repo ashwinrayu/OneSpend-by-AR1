@@ -9,6 +9,9 @@ import '../../../models/subscription_item.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../settings/providers/preferences_provider.dart';
 import '../../transactions/providers/transaction_providers.dart';
+import '../../loans/providers/loan_providers.dart';
+import '../../loans/widgets/add_edit_loan_dialog.dart';
+import '../../loans/widgets/loan_card.dart';
 import '../providers/category_budget_provider.dart';
 import '../providers/subscription_providers.dart';
 
@@ -26,7 +29,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -248,6 +251,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     final monthlyBurn = ref.watch(monthlySubscriptionBurnProvider);
     final categoryBudgets = ref.watch(categoryBudgetProgressListProvider);
     final budgetAsync = ref.watch(activeBudgetProvider);
+    final loansAsync = ref.watch(loansProvider);
+    final totalDebt = ref.watch(totalOutstandingDebtProvider);
+    final monthlyEmiBurden = ref.watch(totalMonthlyEmiBurdenProvider);
+    final totalLoanPaid = ref.watch(totalLoanPaidAmountProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1115),
@@ -264,7 +271,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Budgets & Subscriptions',
+          'Budgets, Bills & Loans',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         bottom: TabBar(
@@ -272,16 +279,48 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
           indicatorColor: AppColors.income,
           labelColor: AppColors.income,
           unselectedLabelColor: Colors.grey,
+          isScrollable: !isDesktop,
           tabs: const [
-            Tab(text: 'Recurring Subscriptions', icon: Icon(Icons.autorenew_rounded, size: 18)),
+            Tab(text: 'Subscriptions', icon: Icon(Icons.autorenew_rounded, size: 18)),
+            Tab(text: 'Loans & EMI', icon: Icon(Icons.account_balance_rounded, size: 18)),
             Tab(text: 'Category Limits', icon: Icon(Icons.pie_chart_outline_rounded, size: 18)),
           ],
         ),
         actions: [
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.add_rounded, color: AppColors.income),
-            tooltip: 'Add Subscription',
-            onPressed: () => _showAddSubscriptionDialog(context),
+            tooltip: 'Add New',
+            color: const Color(0xFF1E222B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onSelected: (val) {
+              if (val == 'loan') {
+                showDialog(context: context, builder: (_) => const AddEditLoanDialog());
+              } else {
+                _showAddSubscriptionDialog(context);
+              }
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'loan',
+                child: Row(
+                  children: [
+                    Icon(Icons.account_balance_rounded, color: AppColors.income, size: 18),
+                    SizedBox(width: 8),
+                    Text('Add Loan / EMI', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'sub',
+                child: Row(
+                  children: [
+                    Icon(Icons.autorenew_rounded, color: Colors.blueAccent, size: 18),
+                    SizedBox(width: 8),
+                    Text('Add Subscription', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -526,7 +565,146 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             ),
           ),
 
-          // Tab 2: Category Limits & Health
+          // Tab 2: Loans & EMI Tracker
+          RefreshIndicator(
+            color: AppColors.income,
+            backgroundColor: const Color(0xFF181B22),
+            onRefresh: () async {
+              await ref.read(loansProvider.notifier).fetchLoans();
+            },
+            child: ListView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 32 : 16,
+                vertical: 20,
+              ),
+              children: [
+                // Top Loans Metrics Banner
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF181B22),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF262B35)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Column(
+                        children: [
+                          const Text('Total Outstanding', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          const SizedBox(height: 4),
+                          Text(
+                            Formatters.formatCurrency(totalDebt),
+                            style: const TextStyle(
+                              color: AppColors.expense,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(height: 36, width: 1, color: const Color(0xFF262B35)),
+                      Column(
+                        children: [
+                          const Text('Monthly EMI', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          const SizedBox(height: 4),
+                          Text(
+                            Formatters.formatCurrency(monthlyEmiBurden),
+                            style: const TextStyle(
+                              color: AppColors.income,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(height: 36, width: 1, color: const Color(0xFF262B35)),
+                      Column(
+                        children: [
+                          const Text('Paid to Date', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          const SizedBox(height: 4),
+                          Text(
+                            Formatters.formatCurrency(totalLoanPaid),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Loan Section Header & Add Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Loans & EMI Plans',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        showDialog(context: context, builder: (_) => const AddEditLoanDialog());
+                      },
+                      icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.income),
+                      label: const Text('Add Loan', style: TextStyle(color: AppColors.income, fontSize: 12)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Loans List
+                loansAsync.when(
+                  data: (loans) {
+                    if (loans.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(Icons.account_balance_outlined, size: 54, color: Colors.white.withOpacity(0.2)),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'No Loans or EMIs Added',
+                                style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Track your Home Loan, Car Loan, or Gadget EMIs and record monthly payments with 1 tap.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.white38, fontSize: 12),
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                style: FilledButton.styleFrom(backgroundColor: AppColors.income, foregroundColor: Colors.black),
+                                onPressed: () {
+                                  showDialog(context: context, builder: (_) => const AddEditLoanDialog());
+                                },
+                                icon: const Icon(Icons.add_rounded, size: 18),
+                                label: const Text('Add First Loan', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: loans.map((l) => LoanCard(loan: l)).toList(),
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.income)),
+                  error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.expense))),
+                ),
+              ],
+            ),
+          ),
+
+          // Tab 3: Category Limits & Health
           ListView(
             padding: EdgeInsets.symmetric(
               horizontal: isDesktop ? 32 : 16,

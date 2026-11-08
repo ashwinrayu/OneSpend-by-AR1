@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/enums.dart';
 import '../../../models/transaction_item.dart';
+import '../../loans/providers/loan_providers.dart';
 import '../../settings/providers/preferences_provider.dart';
 import '../../transactions/providers/transaction_providers.dart';
 
@@ -42,6 +43,8 @@ class AccountsOverviewCard extends ConsumerWidget {
       }
     }
 
+    final totalLoanDebt = ref.watch(totalOutstandingDebtProvider);
+
     final accounts = [
       _AccountDisplay(
         name: 'UPI / Wallets',
@@ -71,6 +74,14 @@ class AccountsOverviewCard extends ConsumerWidget {
         icon: Icons.credit_card_rounded,
         color: Colors.deepPurpleAccent,
       ),
+      if (totalLoanDebt > 0)
+        _AccountDisplay(
+          name: 'Loans & EMI Debt',
+          balance: totalLoanDebt,
+          isDebt: true,
+          icon: Icons.account_balance_wallet_rounded,
+          color: const Color(0xFFF43F5E),
+        ),
     ];
 
     return Container(
