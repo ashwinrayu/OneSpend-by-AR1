@@ -79,8 +79,22 @@ class UpdateService {
       final totalBytes = response.contentLength ?? 0;
       int receivedBytes = 0;
 
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/onespend_latest_update.apk');
+      // Prefer downloads or external cache directory for package installer compatibility
+      Directory? targetDir;
+      try {
+        targetDir = await getDownloadsDirectory();
+      } catch (_) {}
+      try {
+        targetDir ??= (await getExternalCacheDirectories())?.first;
+      } catch (_) {}
+      targetDir ??= await getTemporaryDirectory();
+
+      final file = File('${targetDir.path}/onespend_latest_update.apk');
+      if (await file.exists()) {
+        try {
+          await file.delete();
+        } catch (_) {}
+      }
       final sink = file.openWrite();
 
       await for (final chunk in response.stream) {
@@ -93,6 +107,14 @@ class UpdateService {
 
       await sink.flush();
       await sink.close();
+
+      // Integrity check
+      final downloadedLength = await file.length();
+      if (totalBytes > 0 && downloadedLength < (totalBytes * 0.95)) {
+        debugPrint('Downloaded file size ($downloadedLength) does not match totalBytes ($totalBytes)');
+        return null;
+      }
+
       return file;
     } catch (e) {
       debugPrint('APK download error: $e');
