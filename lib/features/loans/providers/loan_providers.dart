@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/sync_service.dart';
 import '../../../data/repositories/expense_repository.dart';
 import '../../../models/enums.dart';
 import '../../../models/loan_item.dart';
@@ -12,6 +13,12 @@ class LoansNotifier extends StateNotifier<AsyncValue<List<LoanItem>>> {
   }
 
   ExpenseRepository get _repo => ref.read(expenseRepositoryProvider);
+
+  void _triggerBackgroundSync() {
+    try {
+      ref.read(syncServiceProvider.notifier).syncNow();
+    } catch (_) {}
+  }
 
   Future<void> fetchLoans() async {
     try {
@@ -27,6 +34,7 @@ class LoansNotifier extends StateNotifier<AsyncValue<List<LoanItem>>> {
     try {
       await _repo.insertLoan(loan);
       await fetchLoans();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -36,6 +44,7 @@ class LoansNotifier extends StateNotifier<AsyncValue<List<LoanItem>>> {
     try {
       await _repo.updateLoan(loan);
       await fetchLoans();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -45,6 +54,7 @@ class LoansNotifier extends StateNotifier<AsyncValue<List<LoanItem>>> {
     try {
       await _repo.deleteLoan(id);
       await fetchLoans();
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -57,6 +67,7 @@ class LoansNotifier extends StateNotifier<AsyncValue<List<LoanItem>>> {
       // Refresh transactions so the EMI expense shows up immediately
       await ref.read(transactionListProvider.notifier).fetchTransactions();
       ref.invalidate(monthlySummaryProvider);
+      _triggerBackgroundSync();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

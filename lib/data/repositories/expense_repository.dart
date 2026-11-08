@@ -404,6 +404,18 @@ class ExpenseRepository {
     await batch.commit(noResult: true);
   }
 
+  double _asDouble(dynamic val) {
+    if (val == null) return 0.0;
+    if (val is num) return val.toDouble();
+    return double.tryParse(val.toString()) ?? 0.0;
+  }
+
+  int _asInt(dynamic val, {int defaultValue = 0}) {
+    if (val == null) return defaultValue;
+    if (val is num) return val.toInt();
+    return int.tryParse(val.toString()) ?? defaultValue;
+  }
+
   Future<void> mergeServerLoans(List<dynamic> serverChanges) async {
     final db = await _db;
     final batch = db.batch();
@@ -437,14 +449,14 @@ class ExpenseRepository {
           'id': id,
           'name': raw['name'] as String? ?? 'Loan',
           'lender': raw['lender'] as String? ?? '',
-          'totalAmount': (raw['total_amount'] as num?)?.toDouble() ?? 0.0,
-          'interestRate': (raw['interest_rate'] as num?)?.toDouble() ?? 0.0,
-          'tenureMonths': (raw['tenure_months'] as num?)?.toInt() ?? 1,
-          'monthlyEmi': (raw['monthly_emi'] as num?)?.toDouble() ?? 0.0,
-          'paidEmis': (raw['paid_emis'] as num?)?.toInt() ?? 0,
-          'paidAmount': (raw['paid_amount'] as num?)?.toDouble() ?? 0.0,
+          'totalAmount': _asDouble(raw['total_amount']),
+          'interestRate': _asDouble(raw['interest_rate']),
+          'tenureMonths': _asInt(raw['tenure_months'], defaultValue: 1),
+          'monthlyEmi': _asDouble(raw['monthly_emi']),
+          'paidEmis': _asInt(raw['paid_emis'], defaultValue: 0),
+          'paidAmount': _asDouble(raw['paid_amount']),
           'startDate': startDate.millisecondsSinceEpoch,
-          'dueDay': (raw['due_day'] as num?)?.toInt() ?? 5,
+          'dueDay': _asInt(raw['due_day'], defaultValue: 5),
           'category': raw['category'] as String? ?? 'Personal',
           'paymentMethod': raw['payment_method'] as String? ?? 'Bank Transfer',
           'isClosed': (raw['is_closed'] == true || raw['is_closed'] == 1) ? 1 : 0,

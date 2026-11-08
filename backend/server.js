@@ -35,11 +35,11 @@ app.get('/health', (req, res) => {
 // App Version & In-App Cloud Auto-Updater Endpoint
 app.get('/api/app/version', (req, res) => {
   res.status(200).json({
-    latestVersion: '1.2.1',
-    buildNumber: 7,
+    latestVersion: '1.2.2',
+    buildNumber: 8,
     releaseDate: '2026-11-08',
-    releaseNotes: '• 🧮 Fixed & Enhanced Loan Calculations: Flexible 2-way EMI calculation\n• ⚡ 0% No-Cost EMI, Reducing Balance, Flat Rate & Direct Custom EMI modes\n• 📊 Real-time Live Summary preview: Total Payable, Total Interest, Remaining Balance\n• 💳 Linked EMIs Paid & Total Paid Amount inputs for effortless tracking\n• 📅 Dynamic Due Status with "Paid this month" detection',
-    downloadUrl: 'https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.1/app-release.apk',
+    releaseNotes: '• 🔄 Instant Cloud Sync: Adding, updating, deleting loans or paying EMIs in the mobile APK now triggers immediate cloud sync to web\n• 🛡️ Safe Numeric Parsing: Resolved PostgreSQL NUMERIC string casting issues\n• 📱 Mobile Web Responsiveness: Added mobile bottom-sheet modals, touch scroll tables, and Loans tab with quick action badge',
+    downloadUrl: 'https://github.com/ashwinrayu/OneSpend-by-AR1/releases/download/v1.2.2/app-release.apk',
     webAppUrl: 'https://onespend.vercel.app',
     isMandatory: false
   });
