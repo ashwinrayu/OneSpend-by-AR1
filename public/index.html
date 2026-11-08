@@ -412,8 +412,9 @@
       align-items: center;
       justify-content: center;
     }
-    .modal-backdrop.open {
-      display: flex;
+    .modal-backdrop.open,
+    .modal-backdrop.active {
+      display: flex !important;
     }
     .modal-card {
       background-color: var(--bg-surface);
@@ -421,20 +422,25 @@
       border-radius: var(--radius-lg);
       width: 100%;
       max-width: 500px;
+      max-height: calc(100vh - 40px);
+      max-height: calc(100dvh - 40px);
+      display: flex;
+      flex-direction: column;
       box-shadow: var(--shadow-lg);
       overflow: hidden;
       animation: modalFadeIn 0.2s ease-out;
     }
     @keyframes modalFadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
     .modal-header {
-      padding: 20px 24px;
+      padding: 18px 24px;
       border-bottom: 1px solid var(--border-subtle);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
     }
     .modal-title {
       font-size: 16px;
@@ -445,9 +451,25 @@
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 18px;
+      font-size: 20px;
+      line-height: 1;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-close:hover {
+      color: var(--text-main);
     }
     .modal-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1;
+    }
       padding: 24px;
       display: flex;
       flex-direction: column;
@@ -477,12 +499,13 @@
       border-color: var(--border-focus);
     }
     .modal-footer {
-      padding: 16px 24px;
+      padding: 14px 24px;
       background-color: var(--bg-surface-elevated);
       border-top: 1px solid var(--border-subtle);
       display: flex;
       justify-content: flex-end;
       gap: 12px;
+      flex-shrink: 0;
     }
     /* Tab views */
     .tab-view {
@@ -555,12 +578,13 @@
       display: none;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 20px;
+      padding: 10px 16px;
       background-color: var(--bg-surface);
       border-bottom: 1px solid var(--border-subtle);
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 200;
+      backdrop-filter: blur(8px);
     }
     .mobile-nav-bar {
       display: none;
@@ -568,20 +592,21 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: 64px;
+      height: 62px;
       background-color: var(--bg-surface);
       border-top: 1px solid var(--border-subtle);
       z-index: 1000;
       justify-content: space-around;
       align-items: center;
-      box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
+      padding-bottom: env(safe-area-inset-bottom);
     }
     .mobile-nav-item {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 3px;
       color: var(--text-dim);
       font-size: 10px;
       font-weight: 600;
@@ -590,6 +615,7 @@
       height: 100%;
       text-decoration: none;
       transition: color 0.2s;
+      position: relative;
     }
     .mobile-nav-item i {
       font-size: 18px;
@@ -600,28 +626,38 @@
     .mobile-fab {
       display: none;
       position: fixed;
-      bottom: 76px;
-      right: 20px;
-      width: 52px;
-      height: 52px;
+      bottom: 74px;
+      right: 18px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background: linear-gradient(135deg, #10B981, #059669);
       color: #fff;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 20px;
       box-shadow: 0 4px 18px rgba(16, 185, 129, 0.45);
       z-index: 999;
       cursor: pointer;
       border: none;
+      transition: transform 0.15s ease;
+    }
+    .mobile-fab:active {
+      transform: scale(0.92);
     }
 
     @media (max-width: 768px) {
+      html, body {
+        overflow-x: hidden;
+        width: 100%;
+      }
       .app-container {
-        flex-direction: column;
+        display: block;
+        width: 100%;
         height: auto;
         min-height: 100vh;
-        overflow: visible;
+        min-height: 100dvh;
+        overflow-x: hidden;
       }
       .sidebar {
         display: none !important;
@@ -636,33 +672,185 @@
         display: flex;
       }
       .main-wrapper {
-        padding-bottom: 84px;
+        display: block;
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        padding-bottom: 76px;
       }
+
+      /* Mobile Search & Action Toolbar */
       .header {
+        height: auto !important;
+        min-height: auto;
         flex-direction: column;
         align-items: stretch;
-        gap: 12px;
-        padding: 12px 16px;
+        gap: 10px;
+        padding: 10px 14px;
+        background-color: var(--bg-surface);
+        border-bottom: 1px solid var(--border-subtle);
       }
+      .header-search {
+        width: 100% !important;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .header-actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .header-actions #authHeaderArea,
+      .header-actions .sync-status {
+        display: none !important;
+      }
+      .header-actions .btn {
+        flex: 1;
+        min-width: 120px;
+        font-size: 11px;
+        padding: 7px 10px;
+        justify-content: center;
+      }
+
+      /* Content Area */
       .content-area {
-        padding: 16px;
+        padding: 14px 12px;
+        overflow-x: hidden;
+        height: auto;
       }
+
+      /* Metrics Grid (2 columns on mobile, hero card on top) */
       .metrics-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .metrics-grid .metric-card:first-child {
+        grid-column: span 2;
+      }
+      .metric-card {
+        padding: 14px;
+        border-radius: var(--radius-sm);
+      }
+      .metric-value {
+        font-size: 20px;
+      }
+      .metric-title {
+        font-size: 11px;
+      }
+      .metric-sub {
+        font-size: 10px;
+      }
+
+      /* Cards & Section Headers */
+      .card {
+        padding: 16px 12px;
+        margin-bottom: 16px;
+        border-radius: var(--radius-sm);
       }
       .section-header {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+        align-items: stretch;
+        gap: 10px;
+        margin-bottom: 14px;
       }
-      .toast-container {
-        bottom: 80px;
-        right: 16px;
-        left: 16px;
+      .section-header > div {
+        width: 100%;
+        justify-content: space-between;
       }
+      .section-header .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Horizontal Scrolling Tables */
       .table-responsive {
+        width: 100%;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--radius-sm);
+        margin: 0 -4px;
+        padding: 0 4px;
+      }
+      .table-responsive table {
+        min-width: 600px;
+      }
+      th {
+        padding: 10px 12px;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      td {
+        padding: 12px;
+        font-size: 12px;
+      }
+
+      /* Mobile Modal Bottom-Sheet */
+      .modal-backdrop {
+        align-items: flex-end;
+        padding: 0;
+      }
+      .modal-card {
+        max-width: 100% !important;
+        width: 100%;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        max-height: 88vh;
+        max-height: 88dvh;
+      }
+      .modal-header {
+        padding: 16px 18px;
+      }
+      .modal-body {
+        padding: 16px 18px;
+      }
+      .modal-footer {
+        padding: 12px 18px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+      }
+
+      /* Loan Summary Grid on Mobile */
+      .loan-summary-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .loan-summary-divider {
+        border-left: none !important;
+        border-right: none !important;
+        border-top: 1px solid var(--border-subtle) !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+        padding: 12px 0 !important;
+      }
+
+      .toast-container {
+        bottom: 74px;
+        right: 12px;
+        left: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .metrics-grid .metric-card:first-child {
+        grid-column: span 1;
+      }
+      .mobile-top-bar {
+        padding: 10px 12px;
+      }
+      .mobile-nav-item span {
+        font-size: 9px;
+      }
+      .mobile-nav-item i {
+        font-size: 16px;
       }
     }
   </style>
@@ -679,29 +867,29 @@
         </div>
       </div>
       <nav class="nav-links">
-        <a class="nav-item active" onclick="switchTab('dashboard')">
+        <a class="nav-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
           <i class="fa-solid fa-chart-pie"></i>
           <span>Dashboard</span>
         </a>
-        <a class="nav-item" onclick="switchTab('transactions')">
+        <a class="nav-item" onclick="switchTab('transactions')" data-tab="transactions">
           <i class="fa-solid fa-receipt"></i>
           <span>Transactions</span>
           <span class="nav-badge" id="txCountBadge">0</span>
         </a>
-        <a class="nav-item" onclick="switchTab('analytics')">
+        <a class="nav-item" onclick="switchTab('analytics')" data-tab="analytics">
           <i class="fa-solid fa-chart-line"></i>
           <span>Analytics</span>
         </a>
-        <a class="nav-item" onclick="switchTab('budgets')">
+        <a class="nav-item" onclick="switchTab('budgets')" data-tab="budgets">
           <i class="fa-solid fa-calendar-check"></i>
           <span>Subscriptions & Budgets</span>
         </a>
-        <a class="nav-item" onclick="switchTab('loans')">
+        <a class="nav-item" onclick="switchTab('loans')" data-tab="loans">
           <i class="fa-solid fa-hand-holding-dollar"></i>
           <span>Loans & EMI</span>
           <span class="nav-badge" id="loanCountBadge" style="background: rgba(16, 185, 129, 0.15); color: var(--primary);">0</span>
         </a>
-        <a class="nav-item" onclick="switchTab('settings')">
+        <a class="nav-item" onclick="switchTab('settings')" data-tab="settings">
           <i class="fa-solid fa-sliders"></i>
           <span>Settings & Backup</span>
         </a>
@@ -709,12 +897,8 @@
       <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; margin-top: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; align-items: center; justify-content: space-between;">
           <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">Android APK</span>
-          <span style="font-size: 10px; background: rgba(16, 185, 129, 0.2); color: var(--primary); padding: 2px 6px; border-radius: 99px; font-weight: 700;">v1.2.0</span>
+          <span style="font-size: 10px; background: rgba(16, 185, 129, 0.2); color: var(--primary); padding: 2px 6px; border-radius: 99px; font-weight: 700;">v1.2.1</span>
         </div>
-    <div class="mobile-nav-item" onclick="switchTab('loans')">
-      <i class="fa-solid fa-hand-holding-dollar"></i>
-      <span>Loans</span>
-    </div>
         <p style="font-size: 11px; color: var(--text-muted); line-height: 1.3;">Offline-first vault with biometric lock & cloud delta sync.</p>
         <a href="https://github.com/ashwinrayu/OneSpend-by-AR1/releases/latest/download/app-release.apk" class="btn btn-secondary" style="font-size: 11px; padding: 7px 10px; width: 100%; justify-content: center; text-decoration: none;" download>
           <i class="fa-brands fa-android" style="color: #10B981;"></i> Download APK (v1.2.1)
@@ -730,11 +914,11 @@
     <!-- Main Content Area -->
     <div class="main-wrapper">
       <div class="mobile-top-bar">
-        <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="switchTab('dashboard')">
           <div class="brand-icon" style="width: 32px; height: 32px; font-size: 14px;">1S</div>
           <div>
-            <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">OneSpend</div>
-            <div style="font-size: 9px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">by AR1 Studios</div>
+            <div style="font-weight: 700; font-size: 15px; color: var(--text-main); line-height: 1.1;">OneSpend</div>
+            <div style="font-size: 9px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">by AR1 Studios</div>
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -743,6 +927,9 @@
             <div class="sync-dot"></div>
             <span style="font-size: 11px;">Live Sync</span>
           </div>
+          <button class="btn-icon mobile-settings-btn" onclick="switchTab('settings')" title="Settings & Backup" style="background: var(--bg-input); border: 1px solid var(--border-subtle); width: 30px; height: 30px; border-radius: var(--radius-sm); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+            <i class="fa-solid fa-gear" style="font-size: 13px;"></i>
+          </button>
         </div>
       </div>
 
@@ -967,12 +1154,12 @@
         <!-- 4.5. LOANS & EMI VIEW -->
         <div id="view-loans" class="tab-view">
           <div class="card" style="margin-bottom: 24px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; text-align: center; padding: 12px 0;">
+            <div class="loan-summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; text-align: center; padding: 12px 0;">
               <div>
                 <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Total Outstanding Debt</div>
                 <div id="loanTotalOutstandingBanner" style="font-size: 22px; font-weight: 800; color: #F43F5E;">₹0.00</div>
               </div>
-              <div style="border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle);">
+              <div class="loan-summary-divider" style="border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle);">
                 <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Monthly EMI Burden</div>
                 <div id="loanMonthlyEmiBanner" style="font-size: 22px; font-weight: 800; color: var(--primary);">₹0.00</div>
               </div>
@@ -1066,30 +1253,31 @@
 
   <!-- Mobile Navigation Bar -->
   <nav class="mobile-nav-bar">
-    <div class="mobile-nav-item active" onclick="switchTab('dashboard')">
+    <div class="mobile-nav-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
       <i class="fa-solid fa-chart-pie"></i>
       <span>Home</span>
     </div>
-    <div class="mobile-nav-item" onclick="switchTab('transactions')">
+    <div class="mobile-nav-item" onclick="switchTab('transactions')" data-tab="transactions">
       <i class="fa-solid fa-receipt"></i>
       <span>History</span>
     </div>
-    <div class="mobile-nav-item" onclick="switchTab('analytics')">
-      <i class="fa-solid fa-chart-line"></i>
-      <span>Analytics</span>
+    <div class="mobile-nav-item" onclick="switchTab('loans')" data-tab="loans">
+      <i class="fa-solid fa-hand-holding-dollar"></i>
+      <span>Loans</span>
+      <span class="nav-badge" id="mobileLoanCountBadge" style="display:none; position: absolute; top: 4px; right: 18%; font-size: 9px; padding: 1px 5px; border-radius: 99px; background: rgba(16, 185, 129, 0.2); color: var(--primary); font-weight: 700;">0</span>
     </div>
-    <div class="mobile-nav-item" onclick="switchTab('budgets')">
+    <div class="mobile-nav-item" onclick="switchTab('budgets')" data-tab="budgets">
       <i class="fa-solid fa-calendar-check"></i>
       <span>Budgets</span>
     </div>
-    <div class="mobile-nav-item" onclick="switchTab('settings')">
-      <i class="fa-solid fa-sliders"></i>
-      <span>Settings</span>
+    <div class="mobile-nav-item" onclick="switchTab('analytics')" data-tab="analytics">
+      <i class="fa-solid fa-chart-line"></i>
+      <span>Analytics</span>
     </div>
   </nav>
 
   <!-- Mobile Floating Action Button -->
-  <button class="mobile-fab" onclick="openAddTxModal()" title="Add Transaction">
+  <button class="mobile-fab" onclick="handleMobileFabClick()" title="Quick Add">
     <i class="fa-solid fa-plus"></i>
   </button>
 
@@ -1435,15 +1623,22 @@
       const activeView = document.getElementById('view-' + tabName);
       if (activeView) activeView.classList.add('active');
 
-      const tabs = ['dashboard', 'transactions', 'analytics', 'budgets', 'loans', 'settings'];
-      const index = tabs.indexOf(tabName);
-      if (index >= 0) {
-        const desktopItems = document.querySelectorAll('.nav-item');
-        if (desktopItems[index]) desktopItems[index].classList.add('active');
-        const mobileItems = document.querySelectorAll('.mobile-nav-item');
-        if (mobileItems[index]) mobileItems[index].classList.add('active');
-      }
+      // Match active class on desktop and mobile nav items using data-tab
+      document.querySelectorAll('.nav-item[data-tab="' + tabName + '"]').forEach(el => el.classList.add('active'));
+      document.querySelectorAll('.mobile-nav-item[data-tab="' + tabName + '"]').forEach(el => el.classList.add('active'));
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handleMobileFabClick() {
+      const activeTab = document.querySelector('.tab-view.active');
+      if (activeTab && activeTab.id === 'view-loans') {
+        openAddLoanModal();
+      } else if (activeTab && activeTab.id === 'view-budgets') {
+        openAddSubModal();
+      } else {
+        openAddTxModal();
+      }
     }
 
     function toggleCategoryOptions() {
@@ -1478,9 +1673,16 @@
       renderFullTransactions();
       renderSubscriptions();
       renderLoans();
-      document.getElementById('loanCountBadge').innerText = loans.length;
+      const loanBadge = document.getElementById('loanCountBadge');
+      if (loanBadge) loanBadge.innerText = loans.length;
+      const mobileLoanBadge = document.getElementById('mobileLoanCountBadge');
+      if (mobileLoanBadge) {
+        mobileLoanBadge.innerText = loans.length;
+        mobileLoanBadge.style.display = loans.length > 0 ? 'inline-block' : 'none';
+      }
       renderAnalytics();
-      document.getElementById('txCountBadge').innerText = transactions.length;
+      const txBadge = document.getElementById('txCountBadge');
+      if (txBadge) txBadge.innerText = transactions.length;
     }
 
     function renderMetrics() {
@@ -2505,11 +2707,15 @@
       document.getElementById('loanPaidEmis').value = '0';
       document.getElementById('loanPaidAmount').value = '0';
       setWebLoanMode('reducing');
-      document.getElementById('loanModal').classList.add('active');
+      const modal = document.getElementById('loanModal');
+      modal.classList.add('open');
+      modal.classList.add('active');
     }
 
     function closeLoanModal() {
-      document.getElementById('loanModal').classList.remove('active');
+      const modal = document.getElementById('loanModal');
+      modal.classList.remove('open');
+      modal.classList.remove('active');
     }
 
     function handleLoanSubmit(e) {

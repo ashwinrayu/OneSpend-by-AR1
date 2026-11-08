@@ -20,3 +20,4 @@ router.delete('/:id', deleteLoan);
 router.post('/sync', syncLoans);
 
 export default router;
+

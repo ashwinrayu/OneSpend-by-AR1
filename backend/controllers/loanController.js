@@ -298,3 +298,4 @@ export const syncLoans = async (req, res) => {
     client.release();
   }
 };
+
